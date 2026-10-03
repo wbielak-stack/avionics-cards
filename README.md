@@ -35,6 +35,8 @@ forecasts, amber for cautions and red for warnings.
 
 ## Avionics Climate
 
+![Avionics Climate](docs/climate.png)
+
 Room tile with a background temperature graph, comfort indicator and one-tap control
 of an air conditioner or heating mat. Fully configurable in the visual editor.
 
