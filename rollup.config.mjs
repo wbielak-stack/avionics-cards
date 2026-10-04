@@ -30,7 +30,11 @@ export default {
   plugins: [
     replace({
       preventAssignment: true,
-      values: { __AVIONICS_VERSION__: JSON.stringify(pkg.version) },
+      values: {
+        __AVIONICS_VERSION__: JSON.stringify(pkg.version),
+        // znacznik budowania - w konsoli widac, ktory plik faktycznie zaladowala przegladarka
+        __AVIONICS_BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ')),
+      },
     }),
     resolve({ extensions: ['.ts', '.js'] }),
     typescript(),

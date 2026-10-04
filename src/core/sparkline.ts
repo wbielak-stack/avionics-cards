@@ -14,6 +14,15 @@ export interface Spark {
  */
 export function buildSpark(points: Point[], start: number, end: number, minRange: number, buckets = 96): Spark | undefined {
   const pts = points.filter((p) => p[0] >= start);
+  // wartosc obowiazujaca na poczatku okna (ostatni punkt sprzed startu)
+  let before: Point | undefined;
+  for (const p of points) {
+    if (p[0] < start) before = p;
+    else break;
+  }
+  if (before) pts.unshift([start, before[1]]);
+  // ostatnia znana wartosc trwa do konca okna (stan bez zmian = jeden punkt w historii)
+  if (pts.length && pts[pts.length - 1][0] < end) pts.push([end, pts[pts.length - 1][1]]);
   if (pts.length < 2) return undefined;
   const step = (end - start) / buckets;
   const raw: Array<number | null> = [];

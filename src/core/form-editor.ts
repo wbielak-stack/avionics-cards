@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, type CSSResultGroup } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from '../types';
 import { localize, getLanguage } from './i18n';
@@ -32,7 +32,11 @@ export abstract class FormEditor<C extends Record<string, unknown>> extends LitE
 
   private _changed(e: CustomEvent): void {
     e.stopPropagation();
-    const config = { ...this._config!, ...e.detail.value } as C;
+    this.emitConfig({ ...this._config!, ...e.detail.value } as C);
+  }
+
+  /** Zapisz nowa konfiguracje (dla dodatkowych elementow edytora w podklasach). */
+  protected emitConfig(config: C): void {
     this._config = config;
     this.dispatchEvent(new CustomEvent('config-changed', { detail: { config }, bubbles: true, composed: true }));
   }
@@ -51,7 +55,7 @@ export abstract class FormEditor<C extends Record<string, unknown>> extends LitE
     `;
   }
 
-  static styles = css`
+  static styles: CSSResultGroup = css`
     ha-alert {
       display: block;
       margin-top: 8px;

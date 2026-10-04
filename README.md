@@ -9,21 +9,18 @@ forecasts, amber for cautions and red for warnings.
 
 ## Cards
 
-| Card | Type | Status |
+| Card | Type | Purpose |
 |---|---|---|
-| Avionics Climate | `custom:avionics-climate-card` | available |
-| Avionics EIS — engine-indication bars | `custom:avionics-eis-card` | available |
-| Avionics List — compact value list | `custom:avionics-list-card` | available |
-| Avionics Value — large value tile | `custom:avionics-value-card` | available |
-| Avionics Dial — round gauges, single or grouped | `custom:avionics-dial-card` | available |
-| Avionics Bars — hourly bar chart (prices, forecasts) | `custom:avionics-bars-card` | available |
-| Avionics Weather — ready-made weather station | `custom:avionics-weather-card` | available |
-| Avionics Graph — history graph with range buttons | `custom:avionics-graph-card` | available |
-| Avionics Wind — wind compass | `custom:avionics-wind-card` | available |
-| Avionics Wind Graph — hourly wind bars with forecast | `custom:avionics-wind-graph-card` | available |
-| Dial gauge | — | planned |
-| Bar chart | — | planned |
-| Annunciator / alerts | — | planned |
+| Avionics EIS | `custom:avionics-eis-card` | Engine-indication bars with zones, set points, forecasts and observed values |
+| Avionics List | `custom:avionics-list-card` | Compact list of values |
+| Avionics Value | `custom:avionics-value-card` | Large value tile with direction status, footer and background graph |
+| Avionics Dial | `custom:avionics-dial-card` | Round gauges, single or grouped |
+| Avionics Bars | `custom:avionics-bars-card` | Hourly bar chart from a series (energy prices, forecasts) |
+| Avionics Weather | `custom:avionics-weather-card` | Ready-made weather station |
+| Avionics Wind | `custom:avionics-wind-card` | Wind compass |
+| Avionics Wind Graph | `custom:avionics-wind-graph-card` | Hourly wind bars with forecast |
+| Avionics Graph | `custom:avionics-graph-card` | History graph with range buttons |
+| Avionics Climate | `custom:avionics-climate-card` | Room tile with background graph and climate / heating-mat control |
 
 ## Installation
 
@@ -38,41 +35,6 @@ forecasts, amber for cautions and red for warnings.
 1. Download `avionics-cards.js` from the latest [release](../../releases).
 2. Copy it to `/config/www/`.
 3. Settings → Dashboards → ⋮ → **Resources** → add `/local/avionics-cards.js` as a *JavaScript module*.
-
-## Avionics Climate
-
-![Avionics Climate](docs/climate.png)
-
-Room tile with a background temperature graph, comfort indicator and one-tap control
-of an air conditioner or heating mat. Fully configurable in the visual editor.
-
-```yaml
-type: custom:avionics-climate-card
-name: Living room
-temperature_entity: sensor.living_room_temperature
-humidity_entity: sensor.living_room_humidity
-climate_entity: climate.living_room
-co2_entity: sensor.living_room_co2        # optional
-pm25_entity: sensor.living_room_pm25      # optional
-```
-
-| Option | Default | Description |
-|---|---|---|
-| `name` | — | Tile title |
-| `mode` | `room` | `room` or `outdoor` (reference tile: MIN/MAX of the last 24 h instead of unit/set point) |
-| `temperature_entity` | — | Temperature sensor. If missing or unavailable, `current_temperature` of the climate entity is used |
-| `humidity_entity` | — | Humidity sensor |
-| `climate_entity` | — | Climate entity; tap toggles it, hold opens more-info |
-| `co2_entity`, `pm25_entity` | — | Optional air quality sensors |
-| `device_label` | `auto` | `auto`, `ac` or `mat` — wording of status/labels |
-| `t_min` / `t_max` | `19` / `26` | Cold / hot thresholds [°C] |
-| `h_min` / `h_max` | `30` / `60` | Dry / humid thresholds [%] |
-| `co2_max` | `1200` | CO₂ threshold [ppm] |
-| `pm25_max` | `25` | PM2.5 threshold [µg/m³] |
-| `hours_to_show` | `24` | Graph range [h] |
-| `px_per_degree` | `12` | Maximum graph height for 1 °C — keeps amplitudes comparable between tiles |
-| `graph_style` | `color` | `color` (temperature thresholds) or `mono` |
-| `graph_color` | `#00e5ff` | Line colour in `mono` style |
 
 ## Avionics EIS
 
@@ -316,7 +278,9 @@ name: Sell price
 entity: sensor.rce_pse_price
 entity_next: sensor.rce_pse_price_tomorrow   # optional: rest of the series in another entity
 preset: pse_rce                       # pse_rce, nordpool, entsoe or custom
-multiplier: 0.00123                   # PLN/MWh -> PLN/kWh incl. VAT
+multiplier: 0.001                     # PLN/MWh -> PLN/kWh
+offset: 0                             # e.g. 0.08 margin of a dynamic tariff
+final_multiplier: 1.23                # VAT
 unit: PLN/kWh
 hours_back: 2
 hours_forward: 22
@@ -338,7 +302,8 @@ good_entity: sensor.sell_threshold
 | `preset` | `pse_rce` | Known attribute layouts: `pse_rce`, `nordpool`, `entsoe`, or `custom` |
 | `attribute`, `time_field`, `value_field`, `time_is_end` | — | For `custom`: attribute(s) with the list (comma separated), field names, and whether the time marks the end of a period |
 | `hours_back` / `hours_forward` | `2` / `22` | Window around the current hour |
-| `multiplier`, `unit`, `precision` | `1`, entity, auto | Value scaling and display |
+| `multiplier`, `offset`, `final_multiplier` | `1`, `0`, `1` | Value = (raw × `multiplier` + `offset`) × `final_multiplier` — e.g. (spot price + margin) × VAT; the editor shows the resulting formula |
+| `unit`, `precision` | entity, auto | Display |
 | `lineN`, `lineN_entity`, `lineN_label` (N = 1–3) | — | Threshold lines |
 | `band_hours` | — | Hours shown green in the tariff band, e.g. `22-6, 13-15` |
 | `good_direction` | `off` | `above` or `below`: bars green on that side of the threshold |
@@ -461,6 +426,8 @@ History graph of a single entity with range buttons on the card itself.
 - **fixed height** — the graph always spans `span` units (e.g. 20 hPa), so a 2 hPa wave looks
   like 2 hPa; the scale only widens when the data does not fit
 - optional dashed reference line (e.g. 1013 hPa), min / max values on the left, times below
+- mono or **temperature-scale** colouring
+- a series without changes is drawn at the bottom with a "no change" note
 
 ```yaml
 type: custom:avionics-graph-card
@@ -479,7 +446,43 @@ reference_label: "1013"
 | `ranges`, `default_range` | `12, 24, 48`, `24` | Range buttons and the initial range, hours |
 | `scale`, `span` | `auto`, `20` | `auto` or `fixed`; graph height in units for `fixed` |
 | `reference`, `reference_label` | — | Dashed reference line |
+| `graph_style` | `mono` | `mono` or `temperature` — line coloured along the temperature scale (blue → green → yellow → red), as in Avionics Climate |
 | `unit`, `precision`, `multiplier`, `color` | entity, entity, `1`, `#00e5ff` | Display options |
+
+## Avionics Climate
+
+![Avionics Climate](docs/climate.png)
+
+Room tile with a background temperature graph, comfort indicator and one-tap control
+of an air conditioner or heating mat. Fully configurable in the visual editor.
+
+```yaml
+type: custom:avionics-climate-card
+name: Living room
+temperature_entity: sensor.living_room_temperature
+humidity_entity: sensor.living_room_humidity
+climate_entity: climate.living_room
+co2_entity: sensor.living_room_co2        # optional
+pm25_entity: sensor.living_room_pm25      # optional
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `name` | — | Tile title |
+| `mode` | `room` | `room` or `outdoor` (reference tile: MIN/MAX of the last 24 h instead of unit/set point) |
+| `temperature_entity` | — | Temperature sensor. If missing or unavailable, `current_temperature` of the climate entity is used |
+| `humidity_entity` | — | Humidity sensor |
+| `climate_entity` | — | Climate entity; tap toggles it, hold opens more-info |
+| `co2_entity`, `pm25_entity` | — | Optional air quality sensors |
+| `device_label` | `auto` | `auto`, `ac` or `mat` — wording of status/labels |
+| `t_min` / `t_max` | `19` / `26` | Cold / hot thresholds [°C] |
+| `h_min` / `h_max` | `30` / `60` | Dry / humid thresholds [%] |
+| `co2_max` | `1200` | CO₂ threshold [ppm] |
+| `pm25_max` | `25` | PM2.5 threshold [µg/m³] |
+| `hours_to_show` | `24` | Graph range [h] |
+| `px_per_degree` | `12` | Maximum graph height for 1 °C — keeps amplitudes comparable between tiles |
+| `graph_style` | `color` | `color` (temperature thresholds) or `mono` |
+| `graph_color` | `#00e5ff` | Line colour in `mono` style |
 
 ## Theme variables
 
@@ -510,12 +513,6 @@ AVIONICS_DEPLOY_DIR=/path/to/ha/config/www npm run watch
 ```
 
 Releases are built by GitHub Actions when a `vX.Y.Z` tag matching `package.json` is pushed.
-
-## Migrating from `g1000-climate-card`
-
-`custom:g1000-climate-card` is still registered as an alias, the `g1000-style` theme
-variable is still read, and `device_label: KLIMA/MATA` is mapped to `ac/mat`.
-Remove the old `/local/g1000-climate-card.js` resource after installing this bundle.
 
 ## License
 
