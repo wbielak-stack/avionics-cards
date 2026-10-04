@@ -92,7 +92,14 @@ export class AvionicsEisCard extends LitElement {
     }
     const mode = readStyleMode(this);
     const ids = this._rows
-      .flatMap((r) => [r.entity, r.entity2, r.setpoint_entity, r.setpoint2_entity])
+      .flatMap((r) => [
+        r.entity,
+        r.entity2,
+        r.setpoint_entity,
+        r.setpoint2_entity,
+        r.forecast_entity,
+        r.forecast2_entity,
+      ])
       .filter(Boolean) as string[];
     const key = ids.map((e) => hass.states[e]?.last_updated ?? '').join('|') + `|${mode}|${getLanguage(hass)}`;
     if (key === this._key) return;
@@ -244,6 +251,8 @@ export class AvionicsEisCard extends LitElement {
     const spOf = (ent?: string, val?: number) => (ent ? num(this._hass!.states[ent]?.state) : num(val));
     const sp = spOf(r.setpoint_entity, r.setpoint);
     const sp2 = r.entity2 ? spOf(r.setpoint2_entity, r.setpoint2) : NaN;
+    const fc = spOf(r.forecast_entity, r.forecast);
+    const fc2 = r.entity2 ? spOf(r.forecast2_entity, r.forecast2) : NaN;
     // puste znaczniki: skrajne wartosci z okresu albo wartosc sprzed okresu
     const mode = r.range_markers ?? 'both';
     const observed = (id: string | undefined, top: boolean) => {
@@ -293,6 +302,8 @@ export class AvionicsEisCard extends LitElement {
         )}
         ${Number.isFinite(sp) ? marker(sp, true, true, 'var(--av-setpoint)') : nothing}
         ${Number.isFinite(sp2) ? marker(sp2, false, true, 'var(--av-setpoint)') : nothing}
+        ${Number.isFinite(fc) ? marker(fc, true, true, 'var(--av-forecast)') : nothing}
+        ${Number.isFinite(fc2) ? marker(fc2, false, true, 'var(--av-forecast)') : nothing}
         ${observed(r.entity, true)} ${observed(r.entity2, false)}
         ${!failed ? marker(v, true, true, colorOf(v)) : nothing}
         ${Number.isFinite(v2) ? marker(v2, false, true, colorOf(v2)) : nothing}

@@ -16,6 +16,11 @@ forecasts, amber for cautions and red for warnings.
 | Avionics List — compact value list | `custom:avionics-list-card` | available |
 | Avionics Value — large value tile | `custom:avionics-value-card` | available |
 | Avionics Dial — round gauges, single or grouped | `custom:avionics-dial-card` | available |
+| Avionics Bars — hourly bar chart (prices, forecasts) | `custom:avionics-bars-card` | available |
+| Avionics Weather — ready-made weather station | `custom:avionics-weather-card` | available |
+| Avionics Graph — history graph with range buttons | `custom:avionics-graph-card` | available |
+| Avionics Wind — wind compass | `custom:avionics-wind-card` | available |
+| Avionics Wind Graph — hourly wind bars with forecast | `custom:avionics-wind-graph-card` | available |
 | Dial gauge | — | planned |
 | Bar chart | — | planned |
 | Annunciator / alerts | — | planned |
@@ -289,6 +294,192 @@ entities:
 | `setpoint` / `setpoint_entity` | — | Cyan set-point arrow (displayed units) |
 | `forecast` / `forecast_entity` | — | Magenta forecast arrow (displayed units) |
 | `show_range`, `range_minutes`, `range_markers` | `false`, `60`, `max` | Hollow markers: `both`, `min`, `max` over the period, or `ago` |
+
+## Avionics Bars
+
+Hourly bar chart from a list in an entity attribute — typically energy prices or
+forecasts. Periods shorter than an hour (e.g. 15-minute prices) are averaged per hour.
+
+- current hour highlighted with ▼, past hours dimmed
+- tap a bar to read its value in the header, tap again to return to the current hour
+- negative values drawn below a zero line
+- up to three **cyan threshold lines** (fixed value or entity) with labels
+- optional **tariff band** under the bars: listed hours green, others amber
+- bars coloured by the usual zone thresholds
+- optional **opportunity** colouring: bars green above a threshold (e.g. selling) or below it
+  (e.g. charging an EV); caution / warning zones take precedence
+- dashed **midnight** line with a small date label (can be turned off)
+
+```yaml
+type: custom:avionics-bars-card
+name: Sell price
+entity: sensor.rce_pse_price
+entity_next: sensor.rce_pse_price_tomorrow   # optional: rest of the series in another entity
+preset: pse_rce                       # pse_rce, nordpool, entsoe or custom
+multiplier: 0.00123                   # PLN/MWh -> PLN/kWh incl. VAT
+unit: PLN/kWh
+hours_back: 2
+hours_forward: 22
+line1: 0.64
+line1_label: OFFPEAK
+line2_entity: sensor.sell_threshold
+line2_label: THRESHOLD
+line3: 1.19
+line3_label: PEAK
+band_hours: 22-6, 13-15               # cheaper tariff hours
+good_direction: above                 # green bars = worth selling
+good_entity: sensor.sell_threshold
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `entity` | — | Entity holding the series (required) |
+| `entity_next` | — | Optional entity with the rest of the series (same layout), e.g. tomorrow's prices |
+| `preset` | `pse_rce` | Known attribute layouts: `pse_rce`, `nordpool`, `entsoe`, or `custom` |
+| `attribute`, `time_field`, `value_field`, `time_is_end` | — | For `custom`: attribute(s) with the list (comma separated), field names, and whether the time marks the end of a period |
+| `hours_back` / `hours_forward` | `2` / `22` | Window around the current hour |
+| `multiplier`, `unit`, `precision` | `1`, entity, auto | Value scaling and display |
+| `lineN`, `lineN_entity`, `lineN_label` (N = 1–3) | — | Threshold lines |
+| `band_hours` | — | Hours shown green in the tariff band, e.g. `22-6, 13-15` |
+| `good_direction` | `off` | `above` or `below`: bars green on that side of the threshold |
+| `good_value` / `good_entity` | — | Opportunity threshold (displayed units) |
+| `show_midnight` | `true` | Dashed line between 23:00 and 0:00 |
+| `caution_*`, `warning_*` | — | Zone thresholds colouring the bars |
+
+## Avionics Weather
+
+![Avionics Weather — three configurations](docs/wstyles.png)
+
+A ready-made weather station card for people who just want their station on a dashboard.
+Pick the station **device** and the card finds the sensors itself — outdoor (not indoor)
+temperature, relative (not absolute) pressure, current gust (not the daily maximum),
+daily rain (not weekly) and so on. Anything that is not available is simply not shown.
+
+- **wind** as an HSI-style compass rose with speed and gust in the centre and the direction as
+  `WNW 292°` (always where the wind comes from); the arrow shows where the wind comes **from**
+  (meteorological, default) or blows **to**; the rose can be **rotated** so the
+  direction you choose is at the top (e.g. a station display hung on an east-facing wall);
+  hidden when there is no wind data; when the station has its own wind sensors, wind from the
+  `weather.*` entity is shown as a **magenta forecast** arrow with `FCST WSW 9.0 km/h` below
+- **temperature** with today's min / max
+- **pressure** with a magenta trend arrow and change over 3 h; a fast fall (≥ 3 hPa / 3 h) turns amber
+- **humidity**, **UV** with WHO category, **rain** today and current rate
+- **dew point** with temperature spread — amber "fog risk" below 2.5 °C (as in aviation METARs)
+- **feels like**, **solar radiation**, **illuminance**
+- **PM2.5 / PM10** (amber above 25 / 50 µg/m³, red above 50 / 100) and **ionising radiation**
+  (amber above 0.3 µSv/h, red above 1 µSv/h)
+- any **additional sensors** as extra items
+- **order and visibility** of all values set in the editor (↑ ↓ and show / hide), including
+  auto-detected sensors
+- optional **wind graph** — hourly bars: measured average with gust tick and direction arrow for past
+  hours, hourly **forecast** in magenta outline for the next hours (from any `weather.*` entity, units
+  converted), caution / warning thresholds colour bars and gusts — useful for paragliding, kiting,
+  wind turbines
+- optional **pressure graph** at the bottom with 12 / 24 / 48 h buttons, fixed or fitted scale
+  and a dashed 1013 hPa reference line
+
+Two layouts: **list** (compass next to a list of values) and **boxes** — every value in its own
+frame, label and value on one line, in 1–4 columns; the compass takes a tall box in the first column.
+
+Value sources, in order: sensors set in the card → sensors detected on the device →
+attributes of a `weather.*` entity (fills gaps, e.g. UV from a forecast service).
+The editor shows which sensor is used for each value and what is skipped.
+
+```yaml
+type: custom:avionics-weather-card
+name: Weather
+device: 0123456789abcdef          # weather station device (picked in the editor)
+weather_entity: weather.home      # optional fallback
+layout: boxes                     # list or boxes
+columns: 2
+pm25: sensor.airly_pm25           # sensors from other devices
+extra:
+  - sensor.lightning_counter
+```
+
+| Option | Description |
+|---|---|
+| `device` | Weather station device — sensors detected automatically |
+| `weather_entity` | `weather.*` entity used for values without a sensor |
+| `temperature`, `humidity`, `pressure`, `uv`, `wind_speed`, `wind_direction`, `wind_gust`, `rain_rate`, `rain_today`, `feels_like`, `dew_point`, `solar`, `illuminance`, `pm25`, `pm10`, `radiation` | Override detected sensors |
+| `extra` | Additional sensors shown as extra items |
+| `layout`, `columns` | `list` (default) or `boxes`; number of box columns (default `2`, `0` = as many as fit) |
+| `pressure_trend_hours` | Pressure trend period, default `3` |
+| `wind_arrow` | `from` (default) or `to` |
+| `wind_forecast` | Forecast wind from `weather_entity` on the rose (default `true`) |
+| `order` | Item order: field keys (`temperature`, `pressure`, `rain`, …) or entity ids of `extra` sensors; items not listed follow in default order |
+| `hidden` | Items to hide, same keys as `order` |
+| `rotation` | Direction shown at the top of the rose, degrees (default `0` = north) |
+| `pressure_graph`, `pressure_graph_scale`, `pressure_graph_span`, `pressure_graph_ranges`, `pressure_graph_reference` | Pressure graph: on/off, `fixed` (default) or `auto`, height in hPa (default `20`), range buttons (default `12, 24, 48`), 1013 hPa line (default on) |
+| `wind_graph`, `wind_graph_position` | Wind bars on/off; position like the pressure graph (`auto`, `under_wind`, `bottom`) |
+| `wind_forecast_entity` | `weather.*` entity for the hourly wind forecast (default: `weather_entity`) |
+| `wind_graph_hours_back`, `wind_graph_hours_forward` | Measured / forecast hours, default `12` / `12` |
+| `wind_caution`, `wind_warning` | Wind thresholds in station units (e.g. `25` / `35` km/h) |
+| `graph_order` | `pressure_first` (default) or `wind_first` — order when both graphs are in the same place |
+| `pressure_graph_position` | Boxes layout: `auto` (default — under the compass on cards wider than ~640 px, otherwise at the bottom), `under_wind` or `bottom`; on narrow cards the graph always moves to the bottom and the grid drops to 2 columns |
+
+## Avionics Wind and Avionics Wind Graph
+
+![Weather dashboard built from separate cards](docs/wwidgets.png)
+
+The compass and the wind bars from the weather card as separate cards, for building your own
+dashboard (the screenshot combines them with Avionics Graph and Avionics List). Pick the station **device** (wind sensors are detected automatically) or set the
+sensors; both cards share the arrow and rotation options so they stay consistent side by side.
+
+```yaml
+type: custom:avionics-wind-card
+device: 0123456789abcdef            # or wind_speed / wind_direction / wind_gust
+forecast_entity: weather.open_meteo # optional, magenta forecast arrow
+wind_arrow: from                    # from (default) or to
+rotation: 0
+```
+
+```yaml
+type: custom:avionics-wind-graph-card
+device: 0123456789abcdef
+forecast_entity: weather.open_meteo # hourly forecast bars in magenta
+hours_back: 12
+hours_forward: 12
+wind_caution: 25
+wind_warning: 35
+```
+
+| Option | Cards | Description |
+|---|---|---|
+| `name` | both | Title |
+| `device` / `wind_speed`, `wind_direction`, `wind_gust` | both | Station device or explicit sensors |
+| `forecast_entity` | both | `weather.*` entity with the wind forecast |
+| `wind_arrow`, `rotation` | both | Arrow convention and direction at the top |
+| `hours_back`, `hours_forward` | graph | Measured / forecast hours (default `12` / `12`) |
+| `wind_caution`, `wind_warning` | graph | Thresholds in station units |
+
+## Avionics Graph
+
+History graph of a single entity with range buttons on the card itself.
+
+- **fit to height** — any change fills the graph (good for spotting small variations)
+- **fixed height** — the graph always spans `span` units (e.g. 20 hPa), so a 2 hPa wave looks
+  like 2 hPa; the scale only widens when the data does not fit
+- optional dashed reference line (e.g. 1013 hPa), min / max values on the left, times below
+
+```yaml
+type: custom:avionics-graph-card
+entity: sensor.relative_pressure
+ranges: 12, 24, 48
+default_range: 24
+scale: fixed
+span: 20
+reference: 1013.25
+reference_label: "1013"
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `entity`, `name` | — | Entity and title |
+| `ranges`, `default_range` | `12, 24, 48`, `24` | Range buttons and the initial range, hours |
+| `scale`, `span` | `auto`, `20` | `auto` or `fixed`; graph height in units for `fixed` |
+| `reference`, `reference_label` | — | Dashed reference line |
+| `unit`, `precision`, `multiplier`, `color` | entity, entity, `1`, `#00e5ff` | Display options |
 
 ## Theme variables
 
