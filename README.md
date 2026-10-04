@@ -15,6 +15,7 @@ forecasts, amber for cautions and red for warnings.
 | Avionics EIS — engine-indication bars | `custom:avionics-eis-card` | available |
 | Avionics List — compact value list | `custom:avionics-list-card` | available |
 | Avionics Value — large value tile | `custom:avionics-value-card` | available |
+| Avionics Dial — round gauges, single or grouped | `custom:avionics-dial-card` | available |
 | Dial gauge | — | planned |
 | Bar chart | — | planned |
 | Annunciator / alerts | — | planned |
@@ -34,6 +35,8 @@ forecasts, amber for cautions and red for warnings.
 3. Settings → Dashboards → ⋮ → **Resources** → add `/local/avionics-cards.js` as a *JavaScript module*.
 
 ## Avionics Climate
+
+![Avionics Climate](docs/climate.png)
 
 Room tile with a background temperature graph, comfort indicator and one-tap control
 of an air conditioner or heating mat. Fully configurable in the visual editor.
@@ -81,6 +84,7 @@ Bar convention (as on twin-engine cockpit gauges):
 - **hollow pointers = observed values** — on the side of their entity, either the min/max over the row's
   `range_minutes`, or where the value was `range_minutes` ago (shows direction and rate of change)
 - **cyan pointers = set points** — next to the value they belong to: first above the band, second below
+- **magenta pointers = forecasts** — same placement as set points
 
 ```yaml
 type: custom:avionics-eis-card
@@ -139,6 +143,7 @@ entities:
 | `warning_low`, `caution_low`, `caution_high`, `warning_high` | — | Zone thresholds → red / amber / green bands; pointer and value change colour |
 | `setpoint` / `setpoint_entity` | — | Set point of the first value, cyan pointer above the band |
 | `setpoint2` / `setpoint2_entity` | — | Set point of the second value, cyan pointer below the band |
+| `forecast` / `forecast_entity`, `forecast2` / `forecast2_entity` | — | Forecast of the first / second value, magenta pointer above / below the band |
 | `entity2` | — | Second value, filled pointer below the bar (e.g. max cell temperature) |
 | `show_range` | `false` | Hollow markers at observed values |
 | `range_minutes` | `1440` | Observed period for this row, in minutes |
@@ -224,6 +229,66 @@ footer_entity2: sensor.battery_discharged_today
 | `footer_name`, `footer_entity`, `footer_entity2`, `footer_precision` | — | Footer label and value (`a / b` with two entities); the label alone works as a description |
 | `caution_*`, `warning_*` | — | Zone thresholds colouring the value |
 | `show_graph`, `hours_to_show`, `graph_min_range`, `graph_color` | `true`, `24`, `1`, `#00e5ff` | Background graph; `graph_min_range` keeps noise from looking dramatic |
+
+## Avionics Dial
+
+![Avionics Dial](docs/dial.png)
+
+Round gauges. One dial is a single tile; several dials share one frame with an optional
+group title and wrap automatically on narrow screens. Dials are added, removed and
+reordered in the visual editor.
+
+Two styles:
+
+- **`trueAvionics`** (default) — cockpit engine gauge: thin scale with ticks, zone bands
+  outside the scale, red line at `warning_high`, needle and digital readout that turn
+  amber / red in caution / warning zones
+- **`simplified`** — thick track filled up to the value, large number in the centre
+
+![Avionics Dial — simplified](docs/dial2.png)
+
+Markers use the same vocabulary as the EIS card: **cyan** arrow = set point,
+**magenta** arrow = forecast (both outside the scale), **hollow** markers = observed values.
+
+```yaml
+type: custom:avionics-dial-card
+title: Sources
+dial_style: trueAvionics
+entities:
+  - entity: sensor.pv_power
+    name: PV
+    multiplier: 0.001                 # W -> kW
+    unit: kW
+    max: 10
+    forecast_entity: sensor.pv_forecast_now   # magenta, in displayed units (kW)
+    show_range: true
+    range_minutes: 60
+    range_markers: max                # hollow: max of the last hour
+  - entity: sensor.grid_import
+    name: IMPORT
+    multiplier: 0.001
+    unit: kW
+    max: 35
+    caution_high: 20
+    warning_high: 30                  # red line
+```
+
+| Card option | Default | Description |
+|---|---|---|
+| `title` | — | Group title |
+| `dial_style` | `trueAvionics` | `trueAvionics` or `simplified` |
+
+| Dial option | Default | Description |
+|---|---|---|
+| `entity` | — | Entity (required) |
+| `name` | friendly name | Label under the dial |
+| `unit`, `precision` | entity | Unit and decimals (1 decimal by default when a multiplier is used) |
+| `multiplier` | `1` | Scale the value, e.g. `0.001` for W → kW |
+| `min` / `max` | `0` / `100` | Scale range |
+| `caution_*`, `warning_*` | — | Zone thresholds; `warning_high` also draws the red line |
+| `setpoint` / `setpoint_entity` | — | Cyan set-point arrow (displayed units) |
+| `forecast` / `forecast_entity` | — | Magenta forecast arrow (displayed units) |
+| `show_range`, `range_minutes`, `range_markers` | `false`, `60`, `max` | Hollow markers: `both`, `min`, `max` over the period, or `ago` |
 
 ## Theme variables
 
