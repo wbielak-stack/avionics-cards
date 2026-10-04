@@ -12,9 +12,9 @@ forecasts, amber for cautions and red for warnings.
 | Card | Type | Status |
 |---|---|---|
 | Avionics Climate | `custom:avionics-climate-card` | available |
+| Avionics EIS — engine-indication bars | `custom:avionics-eis-card` | available |
+| Avionics List — compact value list | `custom:avionics-list-card` | available |
 | Value tile | — | planned |
-| Horizontal gauge (EIS bar) | — | planned |
-| Entity list | — | planned |
 | Dial gauge | — | planned |
 | Bar chart | — | planned |
 | Annunciator / alerts | — | planned |
@@ -34,8 +34,6 @@ forecasts, amber for cautions and red for warnings.
 3. Settings → Dashboards → ⋮ → **Resources** → add `/local/avionics-cards.js` as a *JavaScript module*.
 
 ## Avionics Climate
-
-![Avionics Climate](docs/climate.png)
 
 Room tile with a background temperature graph, comfort indicator and one-tap control
 of an air conditioner or heating mat. Fully configurable in the visual editor.
@@ -67,6 +65,128 @@ pm25_entity: sensor.living_room_pm25      # optional
 | `px_per_degree` | `12` | Maximum graph height for 1 °C — keeps amplitudes comparable between tiles |
 | `graph_style` | `color` | `color` (temperature thresholds) or `mono` |
 | `graph_color` | `#00e5ff` | Line colour in `mono` style |
+
+## Avionics EIS
+
+![Avionics EIS](docs/eis.png)
+
+Engine-indication style rows: label and digital value with a horizontal bar underneath.
+Rows are added, removed and reordered in the visual editor. For plain values without
+bars use [Avionics List](#avionics-list).
+
+Bar convention (as on twin-engine cockpit gauges):
+
+- **filled pointers = current values** — first entity ▼ above the band, second entity ▲ below;
+  each turns amber/red in its own caution/warning zone
+- **hollow pointers = observed values** — on the side of their entity, either the min/max over the row's
+  `range_minutes`, or where the value was `range_minutes` ago (shows direction and rate of change)
+- **cyan pointers = set points** — next to the value they belong to: first above the band, second below
+
+```yaml
+type: custom:avionics-eis-card
+title: Battery
+entities:
+  - entity: sensor.battery_voltage
+    name: VOLT
+    min: 330
+    max: 420
+    warning_low: 340
+    caution_low: 360
+    caution_high: 410
+    warning_high: 415
+  - entity: sensor.cell_temp_min
+    entity2: sensor.cell_temp_max     # second value: pointer below the bar, shown as a/b
+    name: TEMP
+    min: 0
+    max: 50
+    caution_high: 35
+    warning_high: 45
+  - entity: sensor.cell_delta
+    name: Δ CELL
+    min: 0
+    max: 150
+    caution_high: 30
+    warning_high: 80
+    show_range: true
+    range_minutes: 30                  # observed window per row, in minutes
+    range_markers: max                 # only the worst value matters here
+  - entity: sensor.battery_current
+    name: AMP
+    min: -30
+    max: 30
+    show_range: true
+    range_minutes: 5
+    range_markers: ago                 # hollow pointer = where it was 5 min ago
+  - entity: sensor.battery_soc
+    name: SOC
+    warning_low: 10
+    caution_low: 20
+    show_range: true                  # hollow markers: observed min/max (default 1440 min)
+    setpoint_entity: input_number.target_soc
+  - entity: sensor.remaining_energy    # list row without bar
+    name: REM
+    show_bar: false
+```
+
+| Row option | Default | Description |
+|---|---|---|
+| `entity` | — | Numeric entity (required) |
+| `name` | friendly name | Row label |
+| `unit` | entity unit | Unit override |
+| `precision` | entity / state | Decimals |
+| `show_bar` | `true` | Draw the EIS bar |
+| `min` / `max` | `0` / `100` | Scale range |
+| `warning_low`, `caution_low`, `caution_high`, `warning_high` | — | Zone thresholds → red / amber / green bands; pointer and value change colour |
+| `setpoint` / `setpoint_entity` | — | Set point of the first value, cyan pointer above the band |
+| `setpoint2` / `setpoint2_entity` | — | Set point of the second value, cyan pointer below the band |
+| `entity2` | — | Second value, filled pointer below the bar (e.g. max cell temperature) |
+| `show_range` | `false` | Hollow markers at observed values |
+| `range_minutes` | `1440` | Observed period for this row, in minutes |
+| `range_markers` | `both` | `both`, `min`, `max` — extremes over the period; `ago` — value one period ago |
+| `show_scale` | `false` | Scale numbers under the bar |
+| `major_tick` | auto | Major tick step |
+
+Card option: `title`. Unavailable entities are crossed out with a red X.
+History is fetched once per entity (longest window) and then extended live, so short
+windows stay accurate and several rows of the same entity cost a single query.
+
+## Avionics List
+
+![Avionics List](docs/list.png)
+
+Compact list of values in the same style — label on the left, value on the right.
+Numeric values can be coloured by the same zone thresholds as EIS bars; text states
+are shown the way Home Assistant formats them.
+
+```yaml
+type: custom:avionics-list-card
+title: Battery
+entities:
+  - entity: sensor.battery_remaining_energy
+    name: REM
+  - entity: sensor.battery_balance_today
+    name: BAL TODAY
+    show_sign: true                   # +7.4
+  - entity: sensor.battery_charged_today
+    entity2: sensor.battery_discharged_today
+    name: CHG/DSG                     # 12.7/5.3
+    separator: true                   # line above
+  - entity: sensor.battery_temperature
+    name: TEMP
+    caution_high: 35
+    warning_high: 45
+```
+
+| Row option | Default | Description |
+|---|---|---|
+| `entity` | — | Entity (required) |
+| `name` | friendly name | Row label |
+| `unit` | entity unit | Unit override |
+| `precision` | entity / state | Decimals |
+| `show_sign` | `false` | `+` before positive values |
+| `separator` | `false` | Line above the row |
+| `entity2` | — | Second value, shown as `a/b` |
+| `warning_low`, `caution_low`, `caution_high`, `warning_high` | — | Value turns amber / red outside the thresholds |
 
 ## Theme variables
 
