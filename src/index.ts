@@ -1,4 +1,7 @@
 import './cards/climate/index';
+import './cards/eis/index';
+import './cards/list/index';
+import './cards/value/index';
 
 declare const __AVIONICS_VERSION__: string;
 

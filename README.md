@@ -14,7 +14,7 @@ forecasts, amber for cautions and red for warnings.
 | Avionics Climate | `custom:avionics-climate-card` | available |
 | Avionics EIS — engine-indication bars | `custom:avionics-eis-card` | available |
 | Avionics List — compact value list | `custom:avionics-list-card` | available |
-| Value tile | — | planned |
+| Avionics Value — large value tile | `custom:avionics-value-card` | available |
 | Dial gauge | — | planned |
 | Bar chart | — | planned |
 | Annunciator / alerts | — | planned |
@@ -95,7 +95,7 @@ entities:
     caution_high: 410
     warning_high: 415
   - entity: sensor.cell_temp_min
-    entity2: sensor.cell_temp_max     # second value: pointer below the bar, shown as a/b
+    entity2: sensor.cell_temp_max     # second value: pointer below the bar, shown as a / b
     name: TEMP
     min: 0
     max: 50
@@ -185,8 +185,45 @@ entities:
 | `precision` | entity / state | Decimals |
 | `show_sign` | `false` | `+` before positive values |
 | `separator` | `false` | Line above the row |
-| `entity2` | — | Second value, shown as `a/b` |
+| `entity2` | — | Second value, shown as `a / b` |
 | `warning_low`, `caution_low`, `caution_high`, `warning_high` | — | Value turns amber / red outside the thresholds |
+
+## Avionics Value
+
+![Avionics Value](docs/value.png)
+
+Large value tile: name and direction status on top, big value, footer value under
+the rule and an optional background graph (with a dashed zero line for signed values).
+
+```yaml
+type: custom:avionics-value-card
+name: BAT
+entity: sensor.battery_power          # W, positive = charging
+multiplier: 0.001                     # W -> kW
+unit: kW
+abs_value: true                       # direction is shown by the status
+status_positive: CHG                  # ▲ green
+status_negative: DSG                  # ▼ amber
+deadband: 0.05                        # "—" within ±0.05 kW
+footer_name: TODAY CHG/DSG
+footer_entity: sensor.battery_charged_today
+footer_entity2: sensor.battery_discharged_today
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `entity` | — | Main value (required) |
+| `name` | friendly name | Tile title |
+| `unit`, `precision` | entity | Unit and decimals (2 decimals by default when a multiplier is used) |
+| `multiplier` | `1` | Scale the value, e.g. `0.001` for W → kW |
+| `abs_value` | `false` | Show the absolute value |
+| `show_sign` | `false` | `+` before positive values |
+| `status_positive`, `status_negative` | — | Direction labels (▲ / ▼) by the sign of the value |
+| `status_zero`, `deadband` | `—`, `0` | Label shown within ±deadband of zero |
+| `show_footer` | `true` | `false` hides the rule and footer; the value stays in place |
+| `footer_name`, `footer_entity`, `footer_entity2`, `footer_precision` | — | Footer label and value (`a / b` with two entities); the label alone works as a description |
+| `caution_*`, `warning_*` | — | Zone thresholds colouring the value |
+| `show_graph`, `hours_to_show`, `graph_min_range`, `graph_color` | `true`, `24`, `1`, `#00e5ff` | Background graph; `graph_min_range` keeps noise from looking dramatic |
 
 ## Theme variables
 

@@ -10,3 +10,6 @@ export const fmt = (v: number, digits = 1): string =>
 
 /** Liczba calkowita albo "--". */
 export const fmtInt = (v: number): string => (Number.isFinite(v) ? String(Math.round(v)) : '--');
+
+/** Separator pary wartosci a / b - ze spacjami, zeby liczby sie nie zlewaly. */
+export const PAIR_SEP = ' / ';
