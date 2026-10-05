@@ -7,6 +7,8 @@ import './cards/bars/index';
 import './cards/weather/index';
 import './cards/graph/index';
 import './cards/wind/index';
+import './cards/softkeys/index';
+import './cards/endurance/index';
 
 declare const __AVIONICS_VERSION__: string;
 declare const __AVIONICS_BUILD__: string;

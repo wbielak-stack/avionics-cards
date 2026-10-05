@@ -20,6 +20,8 @@ forecasts, amber for cautions and red for warnings.
 | Avionics Wind | `custom:avionics-wind-card` | Wind compass |
 | Avionics Wind Graph | `custom:avionics-wind-graph-card` | Hourly wind bars with forecast |
 | Avionics Graph | `custom:avionics-graph-card` | History graph with range buttons |
+| Avionics Softkeys | `custom:avionics-softkeys-card` | Function buttons with confirmation, active state, set value and progress |
+| Avionics Endurance | `custom:avionics-endurance-card` | Fuel computer for an energy storage: endurance and ETA, forecast low, SoC profile |
 | Avionics Climate | `custom:avionics-climate-card` | Room tile with background graph and climate / heating-mat control |
 
 ## Installation
@@ -448,6 +450,110 @@ reference_label: "1013"
 | `reference`, `reference_label` | — | Dashed reference line |
 | `graph_style` | `mono` | `mono` or `temperature` — line coloured along the temperature scale (blue → green → yellow → red), as in Avionics Climate |
 | `unit`, `precision`, `multiplier`, `color` | entity, entity, `1`, `#00e5ff` | Display options |
+
+## Avionics Softkeys
+
+Function buttons styled after cockpit controls. One button is a single tile; several share one
+frame with an optional title, as a list of tiles or a row of keys. Two button styles:
+
+- **lamp** (default) — like autopilot mode keys: a lamp (bar on the left of a tile, above the label
+  of a key) and the label turn **green** while the function is active
+- **inverse** — header strip that turns **cyan inverse** while active
+
+The value being set is **cyan**; progress is an EIS-style bar read like a flight plan.
+
+- **action** — any standard Home Assistant action (script, service, toggle, navigate…) with the
+  standard **confirmation**, edited with the usual action editor
+- **active state** — entity and state, or a template that is true, mean "running" (green lamp);
+  label, description and action can differ while active (e.g. *Buy energy* → *Buying*, tap = stop)
+- **armed state** — waiting / about to start (white lamp), like armed autopilot modes; entity and
+  state or a template
+- **hold action** — e.g. a secondary toggle, with the standard confirmation
+- **set value** — `input_number` / `number` with − / + buttons (step, min and max from the entity)
+- **progress** — EIS-style bar on an absolute scale (default 0–100): the white pointer (current)
+  moves towards the cyan target; the travelled part (from the hollow start marker) is grey and the
+  remaining way to the target is **magenta**, like the active leg of a flight plan — works in both
+  directions (charging up, discharging down)
+- **labels and descriptions** — plain text or Jinja templates, rendered by Home Assistant
+
+```yaml
+type: custom:avionics-softkeys-card
+title: Actions
+entities:
+  - name: Buy energy
+    secondary: "{{ states('input_number.buy_kwh') | int }} kWh"
+    tap_action:
+      action: perform-action
+      perform_action: script.buy_energy
+      confirmation:
+        text: Start buying?
+    value_entity: input_number.buy_kwh
+    active_entity: input_boolean.buy_active
+    active_name: Buying
+    active_secondary: "{{ states('sensor.battery_soc') }} % → {{ states('input_number.buy_target_soc') }} %"
+    active_tap_action:
+      action: perform-action
+      perform_action: script.stop_buying
+      confirmation:
+        text: Stop?
+    progress_start: input_number.buy_start_soc
+    progress_current: sensor.battery_soc
+    progress_target: input_number.buy_target_soc
+```
+
+| Button option | Description |
+|---|---|
+| `name`, `icon`, `secondary` | Label, optional icon, description (text or template) |
+| `tap_action`, `hold_action` | Action on tap (idle) and on hold (any state) |
+| `active_entity`, `active_state` / `active_template` | Active when the entity is in this state (default `on`) or the template is true |
+| `active_color` | `ok` (green, default), `caution` (amber — e.g. a system paused) or `warning` (red) |
+| `armed_entity`, `armed_state` / `armed_template` | Armed (waiting) — white lamp; ignored while active |
+| `active_name`, `active_secondary`, `active_tap_action` | Label, description and action while active |
+| `value_entity` | `input_number` / `number` set with − / + |
+| `progress_current`, `progress_target`, `progress_start` | Progress while active: current (white), target (cyan), start (hollow, optional) — entities or numbers |
+| `progress_min`, `progress_max` | Scale of the progress bar, default `0` / `100` |
+
+Card options: `title`, `layout` (`list` or `row`), `key_style` (`lamp` or `inverse`).
+
+## Avionics Endurance
+
+A fuel computer for a home battery — the energy storage is the fuel tank:
+
+- **ENDUR** (time to empty) and **ETA** (clock time) for two scenarios: *without PV* (current
+  consumption; amber / red when short) and *with the PV forecast* (magenta, it is a forecast) —
+  or "will not deplete" with the forecast low and the SoC after PV charging
+- **SoC gauge** like a fuel gauge: white pointer now, magenta hollow marker at the forecast low,
+  magenta marker at the SoC after PV, red / amber zones at the bottom of the scale
+- optional **SoC profile** — the forecast SoC as a dashed magenta line, like a vertical profile
+- ETA is counted from the time the forecast was calculated (`updated` attribute)
+
+Values come from attributes of one forecast entity; names are configurable.
+
+```yaml
+type: custom:avionics-endurance-card
+name: Battery
+entity: sensor.battery_forecast
+endurance_attribute: autonomy_nopv_h     # hours, null = more than max_hours
+endurance_pv_attribute: autonomy_pv_h    # hours, null = will not deplete
+soc_attribute: soc_now                   # or soc_entity: sensor.battery_soc
+min_attribute: min_soc_predicted
+min_hour_attribute: min_soc_hour
+rebound_attribute: rebound_soc
+updated_attribute: updated
+trajectory_attribute: soc_trajectory     # list of numbers or of objects with "soc"
+max_hours: 36
+caution_hours: 6
+warning_hours: 3
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `entity` | — | Forecast entity (required) |
+| `*_attribute`, `soc_entity` | see above | Where the values are |
+| `label_nopv`, `label_pv` | `ENDUR · NO PV`, `ENDUR · WITH PV` | Scenario labels |
+| `max_hours`, `caution_hours`, `warning_hours` | `36`, `6`, `3` | "> N h" above; amber / red below |
+| `soc_warning`, `soc_caution` | `10`, `20` | Gauge zones |
+| `show_profile`, `profile_hours` | `true`, `24` | SoC profile |
 
 ## Avionics Climate
 
