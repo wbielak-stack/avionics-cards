@@ -5,6 +5,7 @@ import { fetchNumericHistory, type Point } from '../../core/history';
 import { num } from '../../core/format';
 import { localize, getLanguage } from '../../core/i18n';
 import { TEMPERATURE_THRESHOLDS } from '../../core/thresholds';
+import { type GridMode, gridValues, gridSvg, gridLabels, snapRange, fixedRange } from '../../core/grid';
 
 const HISTORY_REFRESH_MS = 10 * 60 * 1000;
 const LIVE_GAP_MS = 60 * 1000;
@@ -27,6 +28,11 @@ export class AvionicsGraphEl extends LitElement {
   @property() color = '#00e5ff';
   /** mono = jeden kolor; temperature = gradient wg progow temperatury (jak w karcie klimatu) */
   @property() colorMode: 'mono' | 'temperature' = 'mono';
+  /** podzialka i staly zakres osi */
+  @property() grid: GridMode = 'nice';
+  @property({ type: Number }) gridStep = NaN;
+  @property({ type: Number }) yMin = NaN;
+  @property({ type: Number }) yMax = NaN;
   @property({ type: Number }) multiplier = 1;
   @property({ type: Number }) digits = 0;
 
@@ -140,6 +146,16 @@ export class AvionicsGraphEl extends LitElement {
       lo = dMin - pad;
       hi = dMax + pad;
     }
+    const g = { mode: this.grid, step: this.gridStep };
+    // staly zakres osi (np. bojler 0-100): granice rozszerzane tylko, gdy dane wyjda poza nie
+    if (Number.isFinite(this.yMin) || Number.isFinite(this.yMax)) {
+      [lo, hi] = fixedRange(flat ? dMin : lo, flat ? dMax : hi, this.yMin, this.yMax);
+    } else if (this.scale !== 'fixed' && !flat) {
+      // skala dopasowana: krawedzie na rownych liczbach
+      [lo, hi] = snapRange(lo, hi, g);
+    }
+    const gv = gridValues(lo, hi, g);
+    const labelled = this.grid === 'nice' || this.grid === 'fixed';
     const y = (v: number) => 40 - ((v - lo) / (hi - lo)) * 40;
     const x = (k: number) => (k / (BUCKETS - 1)) * 100;
     let d = `M 0 ${y(vals[0]).toFixed(2)}`;
@@ -172,6 +188,7 @@ export class AvionicsGraphEl extends LitElement {
               ${stops.map(([o, col]) => svg`<stop offset=${o} stop-color=${col}></stop>`)}
             </linearGradient>
           </defs>
+          ${gridSvg(gv, y, 100)}
           <path d=${`${d} L 100 40 L 0 40 Z`} fill="url(#gc)" fill-opacity="0.15" stroke="none"></path>
           ${Number.isFinite(ref)
             ? svg`<line class="ref" x1="0" x2="100" y1=${y(ref)} y2=${y(ref)} vector-effect="non-scaling-stroke"></line>`
@@ -182,7 +199,9 @@ export class AvionicsGraphEl extends LitElement {
           ? html`<span class="flat"
               >${localize(getLanguage(this.hass), 'graph.flat').replace('{h}', String(range))} · ${this._fmt(dMin)}</span
             >`
-          : html`<span class="ymax">${this._fmt(dMax)}</span><span class="ymin">${this._fmt(dMin)}</span>`}
+          : labelled && gv.length
+            ? gridLabels(gv, (v) => (y(v) / 40) * 100, g, lo, hi)
+            : html`<span class="ymax">${this._fmt(dMax)}</span><span class="ymin">${this._fmt(dMin)}</span>`}
         ${Number.isFinite(ref)
           ? html`<span class="reflbl" style="top:${(y(ref) / 40) * 100}%">${this.referenceLabel || this._fmt(ref)}</span>`
           : nothing}

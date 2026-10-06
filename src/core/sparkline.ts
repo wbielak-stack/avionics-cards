@@ -5,6 +5,9 @@ export interface Spark {
   area: string;
   /** y linii zera w ukladzie 0..40, gdy zero lezy w zakresie wykresu */
   zeroY?: number;
+  /** zakres osi (do podzialki) */
+  lo: number;
+  hi: number;
 }
 
 /**
@@ -55,5 +58,7 @@ export function buildSpark(points: Point[], start: number, end: number, minRange
     line,
     area: `${line} L 100 40 L 0 40 Z`,
     zeroY: zero > 0 && zero < 40 ? zero : undefined,
+    lo,
+    hi: lo + range,
   };
 }

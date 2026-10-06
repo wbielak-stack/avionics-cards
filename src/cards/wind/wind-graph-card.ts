@@ -91,6 +91,9 @@ export class AvionicsWindGraphCard extends LitElement {
           .arrowTo=${c.wind_arrow === 'to'}
           .rotation=${c.rotation ?? 0}
           .unit=${unit}
+          .grid=${c.grid ?? 'nice'}
+          .gridStep=${num(c.grid_step)}
+          .yMax=${num(c.y_max)}
         ></avionics-wind-graph-el>
       </ha-card>
     `;

@@ -1,6 +1,7 @@
 import { FormEditor } from '../../core/form-editor';
 import { schemaGrid as grid, schemaSection } from '../../core/row-list-editor';
 import type { WindCardConfig } from './config';
+import { gridSchema } from '../../core/grid';
 
 type C = WindCardConfig & Record<string, unknown>;
 
@@ -45,11 +46,12 @@ export class AvionicsWindGraphCardEditor extends FormEditor<C> {
   protected labelPrefix = 'wind.editor.';
   tr = (k: string) => this.t(k);
   protected formDefaults() {
-    return { wind_arrow: 'from' as const, rotation: 0, hours_back: 12, hours_forward: 12 };
+    return { wind_arrow: 'from' as const, rotation: 0, hours_back: 12, hours_forward: 12, grid: 'nice' as const };
   }
-  protected schema() {
+  protected schema(c: WindCardConfig) {
     return [
       ...common(this),
+      grid([...gridSchema('grid', 'grid_step', (k) => this.t(k), c.grid), { name: 'y_max', selector: { number: { step: 1, mode: 'box' } } }]),
       grid([
         { name: 'hours_back', selector: { number: { min: 1, max: 48, step: 1, mode: 'box' } } },
         { name: 'hours_forward', selector: { number: { min: 0, max: 48, step: 1, mode: 'box' } } },

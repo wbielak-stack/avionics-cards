@@ -1,6 +1,7 @@
 import { FormEditor } from '../../core/form-editor';
 import { schemaGrid as grid, schemaSection } from '../../core/row-list-editor';
 import { ENDURANCE_DEFAULTS, type EnduranceCardConfig } from './config';
+import { gridSchema } from '../../core/grid';
 
 export class AvionicsEnduranceCardEditor extends FormEditor<EnduranceCardConfig & Record<string, unknown>> {
   protected labelPrefix = 'endur.editor.';
@@ -52,6 +53,7 @@ export class AvionicsEnduranceCardEditor extends FormEditor<EnduranceCardConfig 
           { name: 'show_profile', selector: { boolean: {} } },
           ...(c.show_profile !== false ? [{ name: 'profile_hours', selector: numSel() }] : []),
         ]),
+        ...(c.show_profile !== false ? [grid(gridSchema('profile_grid', 'profile_grid_step', (k) => this.t(k), c.profile_grid))] : []),
       ]),
     ];
   }

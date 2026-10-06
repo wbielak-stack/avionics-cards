@@ -22,6 +22,11 @@ forecasts, amber for cautions and red for warnings.
 | Avionics Graph | `custom:avionics-graph-card` | History graph with range buttons |
 | Avionics Softkeys | `custom:avionics-softkeys-card` | Function buttons with confirmation, active state, set value and progress |
 | Avionics Endurance | `custom:avionics-endurance-card` | Fuel computer for an energy storage: endurance and ETA, forecast low, SoC profile |
+| Avionics Goal | `custom:avionics-goal-card` | Progress to a goal like a flight, or wear to a limit like engine TBO |
+| Avionics Forecast | `custom:avionics-forecast-card` | Hourly forecast from Open-Meteo: cloud layers, fog, precipitation, temperature, pressure, wind, PV |
+| Avionics Radar | `custom:avionics-radar-card` | Precipitation radar like NEXRAD on an MFD |
+| Avionics METAR | `custom:avionics-metar-card` | METAR for an airport: flight category, raw report, decoded fields |
+| Avionics Astro | `custom:avionics-astro-card` | Sun and moon: day profile, twilight, day length, moon phase |
 | Avionics Climate | `custom:avionics-climate-card` | Room tile with background graph and climate / heating-mat control |
 
 ## Installation
@@ -449,6 +454,8 @@ reference_label: "1013"
 | `scale`, `span` | `auto`, `20` | `auto` or `fixed`; graph height in units for `fixed` |
 | `reference`, `reference_label` | — | Dashed reference line |
 | `graph_style` | `mono` | `mono` or `temperature` — line coloured along the temperature scale (blue → green → yellow → red), as in Avionics Climate |
+| `grid`, `grid_step` | `nice` | Grid lines — see *Grid* below |
+| `y_min`, `y_max` | — | Fixed axis range (e.g. a boiler 0–100 °C); widened only when the data goes outside |
 | `unit`, `precision`, `multiplier`, `color` | entity, entity, `1`, `#00e5ff` | Display options |
 
 ## Avionics Softkeys
@@ -555,6 +562,194 @@ warning_hours: 3
 | `soc_warning`, `soc_caution` | `10`, `20` | Gauge zones |
 | `show_profile`, `profile_hours` | `true`, `24` | SoC profile |
 
+## Avionics Goal
+
+Rows of two kinds:
+
+- **goal** — read like a flight to a destination: travelled part grey, remaining way magenta,
+  **DIS** (left to go), **GS** (rate per day), **ETE** and **ETA**; after the goal is reached a
+  green *REACHED ✓* badge appears, the bar starts again (100 % is the new zero) and the full value
+  stays visible, e.g. *9840 / 8000 · 123 %*
+- **limit** — wear to a limit like engine time to TBO: used part, amber / red zones near the limit,
+  remaining %, and when the limit will be reached; above 100 % the bar turns red with *EXCEEDED*
+
+Current value, goal and rate can come from an entity, an attribute or a template; the rate can
+also be computed from a start date (value / days). The marker sits at the goal, at your own point
+(e.g. a forecast for a date — magenta, or a set point — cyan) or can be turned off.
+
+```yaml
+type: custom:avionics-goal-card
+title: Economy
+entities:
+  - name: Cycle life
+    kind: limit
+    current_template: "{{ states('sensor.battery_discharged_total') | float(0) / 40 }}"
+    target: 2000
+    start_date: "2026-03-01"
+    precision: 0
+  - name: Payback
+    kind: goal
+    current_entity: sensor.battery_profit_total
+    target: 8000
+    unit: zł
+    precision: 2
+    start_date: "2026-03-01"
+```
+
+| Row option | Description |
+|---|---|
+| `name`, `kind` | Label; `goal` (default) or `limit` |
+| `current_entity` + `current_attribute` / `current_template` | Current value |
+| `target` / `target_entity` / `target_template`, `start` | Goal or limit; scale start (default `0`) |
+| `start_date` / `rate_entity` / `rate_template` | Rate per day (GS) |
+| `marker`, `marker_value` / `marker_entity` / `marker_template`, `marker_color` | `target` (default), `custom` or `off`; colour `forecast` (magenta, default) or `setpoint` (cyan) |
+| `caution_pct`, `warning_pct` | Limit zones, default `80` / `95` % |
+| `unit`, `precision` | Display |
+
+## Avionics Forecast
+
+Hourly forecast fetched directly from [Open-Meteo](https://open-meteo.com) for the home location
+(no API key). Rows are ordered from the sky to the ground and each can be turned off:
+
+- **cloud layers** high / mid / low and **fog** (BR mist < 5 km, FG fog < 1 km) as cells; legend in
+  **oktas** (FEW / SCT / BKN / OVC) or percent
+- **precipitation** bars coloured like a weather radar (light green, moderate yellow, heavy red), brightness =
+  probability; *no precipitation in the forecast* when there is none; probability row
+- **temperature** and **pressure** lines with the grid
+- **wind** with direction arrows and **gusts** (amber / red from thresholds); knots, km/h, m/s or mph
+- **PV** (optional) — calculated from irradiance on the panel plane (power, tilt, azimuth, efficiency)
+  or taken from an integration (Solcast, Open-Meteo Solar Forecast, custom attribute); daily sums
+
+The number of labels follows the card width (every hour on a wide card, every 2–4 hours in a column).
+Range buttons (*N h*, *tomorrow*, *48 h*) can be hidden; `offset_hours` lets two cards side by side
+show e.g. 0–12 h and 12–24 h.
+
+```yaml
+type: custom:avionics-forecast-card
+hours: 36
+wind_unit: kn
+cloud_mode: okta
+show_pv: true
+pv_source: calculated
+pv_kwp: 9.6
+pv_tilt: 35
+pv_azimuth: 0
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `view`, `hours`, `offset_hours`, `show_buttons` | `next`, `36`, `0`, `true` | Window: from now (+ offset) or `tomorrow` |
+| `show_clouds`, `show_fog`, `show_precip`, `show_temperature`, `show_pressure`, `show_wind`, `show_pv` | all on, PV off | Rows |
+| `size` | `auto` | `compact`, `normal`, `large` — fonts and graph heights; `auto` follows the card width |
+| `cloud_mode` | `okta` | `okta` or `percent` |
+| `wind_unit`, `gust_caution`, `gust_warning` | `kn`, 25 / 35 kt | Wind unit and gust thresholds (defaults follow the unit) |
+| `pv_source` | `calculated` | `calculated` (`pv_kwp`, `pv_tilt`, `pv_azimuth`, `pv_efficiency`) or `entity` (`pv_entity`, `pv_preset`: `solcast`, `open_meteo_solar`, `custom` with `pv_attribute`, `pv_time_field`, `pv_value_field`, `pv_multiplier`) |
+| `latitude`, `longitude` | home | Location |
+
+## Avionics Radar
+
+Precipitation radar in the style of the NEXRAD overlay on a cockpit MFD: black background with a
+vector map like an MFD (borders, coastlines, rivers, lakes and cities from Natural Earth, drawn over
+the radar so they stay visible), home in
+the centre with dashed range rings (km or NM) and a north marker, animation of the last ~2 hours.
+
+The free [RainViewer](https://www.rainviewer.com/api.html) API offers only one palette (Universal
+Blue), zoom up to 7 and past frames. The card therefore **decodes the radar reflectivity (dBZ)** from
+the Universal Blue colours in the browser, **interpolates the dBZ field** for higher zoom levels
+(smooth contours, no mixed colours) and paints it with the cockpit palette: green from 15 dBZ (light),
+yellow from 30 (moderate), red from 40 (heavy), magenta from 50 (very heavy). Below the map: distance
+and direction to the nearest echo, moderate and heavy precipitation.
+
+Drag to move the map, + / − to zoom, ⌂ to return home. City labels never overlap: larger cities
+first, about one label per 10 000 px² of map. The radar data level follows the zoom, so a wide view
+needs only a few tiles per frame.
+
+If the tile server does not allow reading pixels in the browser, the card falls back to the original
+RainViewer colours and says so on the map.
+
+```yaml
+type: custom:avionics-radar-card
+zoom: 8
+height: 320
+rings: 25, 50, 100
+distance_unit: km
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `zoom`, `height` | `8`, `320` | Map zoom (radar field interpolated above 8) and height in px |
+| `rings`, `distance_unit` | `25, 50, 100`, `km` | Range rings; `km` or `nm` |
+| `show_distances` | `true` | Distance to the nearest precipitation |
+| `style`, `opacity`, `map_brightness` | `g1000`, `0.85`, `0.8` | `g1000` (recoloured by dBZ) or `orig`; radar opacity; map brightness |
+| `basemap` | `vector` | `vector` (MFD-style vector map), `esri_dark`, `osm` (darkened), `custom` (`basemap_url` with `{z}` `{x}` `{y}`) or `none` |
+| `vector_url` | `data/europe.json` in this repository | Vector map file; can be served from Home Assistant, e.g. `/local/europe.json` |
+| `autoplay`, `frame_ms` | `true`, `600` | Animation |
+| `latitude`, `longitude` | home | Centre |
+
+## Avionics METAR
+
+Current METAR for an airport from [aviationweather.gov](https://aviationweather.gov/data/api/), decoded
+in the card: flight category badge (VFR green, MVFR blue, IFR red, LIFR magenta), observation time in
+UTC with age (amber after 60 min, red after 120 min), the raw report, and decoded wind (gusts,
+variable direction), visibility, clouds, ceiling (lowest BKN / OVC / VV), temperature / dew point,
+QNH (also converted from inches) and weather. The raw METAR can also come from an entity (state or
+attribute).
+
+```yaml
+type: custom:avionics-metar-card
+station: EPKK
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `station` | — | ICAO code |
+| `source` | `api` | `api` (aviationweather.gov, refreshed every 10 min) or `entity` |
+| `entity`, `attribute` | — | Entity with the raw METAR (state, or the given attribute) |
+| `show_raw` | `true` | Show the raw report |
+
+If the browser may not query aviationweather.gov directly (CORS), let Home Assistant fetch the report
+with a REST sensor and use `source: entity`:
+
+```yaml
+# configuration.yaml
+rest:
+  - resource: https://aviationweather.gov/api/data/metar?ids=EPKK&format=raw
+    scan_interval: 600
+    sensor:
+      - name: METAR EPKK
+        value_template: "{{ value | trim | truncate(255, true, '') }}"
+```
+
+```yaml
+type: custom:avionics-metar-card
+station: EPKK
+source: entity
+entity: sensor.metar_epkk
+```
+
+## Avionics Astro
+
+Sun and moon computed in the card from the home location (SunCalc formulas — no extra entities):
+
+- **day profile** — background by time of day (civil twilight, nautical twilight, night), the
+  sun's altitude over 24 h (white) and the moon's own altitude (pale dashed — it is the real moon
+  path, not the sun's), *now* line with the sun and a moon phase icon, sunrise ▲ and sunset ▼ times
+- values are **computed** (like the `sun.sun` integration, which also computes them) and agree with
+  it to the minute; the card computes them itself because `sun.sun` only offers the *next* events
+- **sun** — rise / set, civil dawn / dusk (the night boundary for VFR flying, and a good time for
+  lights and blinds), solar noon, day length with the change from yesterday, current elevation /
+  azimuth
+- **moon** — phase drawing and name, illuminated %, rise / set, next full and new moon
+
+```yaml
+type: custom:avionics-astro-card
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `show_profile`, `show_sun`, `show_moon` | `true` | Sections |
+| `latitude`, `longitude` | home | Location |
+
 ## Avionics Climate
 
 ![Avionics Climate](docs/climate.png)
@@ -589,6 +784,23 @@ pm25_entity: sensor.living_room_pm25      # optional
 | `px_per_degree` | `12` | Maximum graph height for 1 °C — keeps amplitudes comparable between tiles |
 | `graph_style` | `color` | `color` (temperature thresholds) or `mono` |
 | `graph_color` | `#00e5ff` | Line colour in `mono` style |
+
+## Grid
+
+All graphs share the same faint grey grid with four modes:
+
+| Mode | Lines |
+|---|---|
+| `off` | none |
+| `auto` | the data range divided into four (no labels — values would be uneven) |
+| `nice` | round numbers (1 / 2 / 2.5 / 5 × 10ⁿ) with small labels; the axis is extended to the nearest lines |
+| `fixed` | your own step (`…grid_step`), optionally with a fixed axis range |
+
+Where: Avionics Graph (`grid`, `grid_step`, `y_min`, `y_max`), Avionics Bars (same), Avionics Wind
+Graph (`grid`, `grid_step`, `y_max`), Avionics Weather (`pressure_graph_grid`, `wind_graph_grid` +
+`…_step`), Avionics Endurance (`profile_grid`, `profile_grid_step`) — all `nice` by default — and the
+background graphs of Avionics Value and Avionics Climate (`graph_grid`, `graph_grid_step`, `off` by
+default, lines without labels).
 
 ## Theme variables
 

@@ -54,6 +54,11 @@ export interface BarsCardConfig {
 
   /** pionowa linia o polnocy */
   show_midnight?: boolean;
+  /** podzialka i staly zakres osi */
+  grid?: 'off' | 'auto' | 'nice' | 'fixed';
+  grid_step?: number;
+  y_min?: number;
+  y_max?: number;
 }
 
 export const PRESETS: Record<Exclude<BarsPreset, 'custom'>, Pick<BarsCardConfig, 'attribute' | 'time_field' | 'value_field' | 'time_is_end'>> = {
@@ -71,6 +76,7 @@ export const BARS_DEFAULTS: Partial<BarsCardConfig> = {
   final_multiplier: 1,
   good_direction: 'off',
   show_midnight: true,
+  grid: 'nice',
 };
 
 export function normalizeBars(c: BarsCardConfig): BarsCardConfig {

@@ -8,6 +8,7 @@ import { localize, getLanguage } from '../../core/i18n';
 import { fireMoreInfo } from '../../core/actions';
 import { readStyleMode, type StyleMode } from '../../core/style-mode';
 import { attrNum, attrPath } from '../../core/attr';
+import { gridValues, gridSvg, gridLabels } from '../../core/grid';
 import { type EnduranceCardConfig, normalizeEndurance } from './config';
 
 const HOUR = 3600e3;
@@ -214,9 +215,12 @@ export class AvionicsEnduranceCard extends LitElement {
       return { f, l: f === 0 ? t('endur.now') : pad(h.getHours()) };
     });
     void n;
+    const g = { mode: c.profile_grid ?? 'nice', step: c.profile_grid_step };
     return html`<div class="profile">
       <span class="plbl">${t('endur.profile').replace('{h}', String(hours))}</span>
+      ${gridLabels(gridValues(0, 100, g), (v) => (y(v) / 40) * 100, g, 0, 100, 'right')}
       <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+        ${gridSvg(gridValues(0, 100, g), y, 100)}
         <line x1="0" x2="100" y1=${y(c.soc_caution ?? 20)} y2=${y(c.soc_caution ?? 20)} class="lvl" vector-effect="non-scaling-stroke"></line>
         <path d=${d} class="traj" vector-effect="non-scaling-stroke"></path>
       </svg>

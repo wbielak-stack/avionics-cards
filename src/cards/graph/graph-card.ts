@@ -82,6 +82,10 @@ export class AvionicsGraphCard extends LitElement {
           .referenceLabel=${c.reference_label ?? ''}
           .color=${c.color ?? '#00e5ff'}
           .colorMode=${c.graph_style ?? 'mono'}
+          .grid=${c.grid ?? 'nice'}
+          .gridStep=${num(c.grid_step)}
+          .yMin=${num(c.y_min)}
+          .yMax=${num(c.y_max)}
           .multiplier=${c.multiplier ?? 1}
           .digits=${digits}
         ></avionics-graph-el>

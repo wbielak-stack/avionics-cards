@@ -20,6 +20,9 @@ export interface ClimateCardConfig {
   graph_color: string;
   graph_style: 'color' | 'mono';
   px_per_degree: number;
+  /** podzialka wykresu w tle (domyslnie wylaczona) */
+  graph_grid?: 'off' | 'auto' | 'nice' | 'fixed';
+  graph_grid_step?: number;
 }
 
 /**

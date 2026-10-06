@@ -27,6 +27,11 @@ export type WeatherCardConfig = {
   pressure_graph_ranges?: string;
   /** linia 1013 hPa na wykresie */
   pressure_graph_reference?: boolean;
+  /** podzialka wykresu cisnienia i wiatru */
+  pressure_graph_grid?: 'off' | 'auto' | 'nice' | 'fixed';
+  pressure_graph_grid_step?: number;
+  wind_graph_grid?: 'off' | 'auto' | 'nice' | 'fixed';
+  wind_graph_grid_step?: number;
   /** polozenie wykresu: auto (pod roza przy 3+ kolumnach), pod roza, na dole */
   pressure_graph_position?: 'auto' | 'under_wind' | 'bottom';
   /** wiatr z encji weather.* jako prognoza (magenta) na rozy */
@@ -61,6 +66,8 @@ export const WEATHER_DEFAULTS: Partial<WeatherCardConfig> = {
   pressure_graph_ranges: '12, 24, 48',
   pressure_graph_reference: true,
   pressure_graph_position: 'auto',
+  pressure_graph_grid: 'nice',
+  wind_graph_grid: 'nice',
   wind_forecast: true,
   wind_graph: false,
   wind_graph_position: 'auto',

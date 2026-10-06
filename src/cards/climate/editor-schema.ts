@@ -42,6 +42,8 @@ export function buildClimateSchema(lang: string) {
           { name: 'px_per_degree', selector: num(2, 60, 1) },
           { name: 'graph_style', selector: select(['color', 'mono'], 'editor.graph_style') },
           { name: 'graph_color', selector: { text: {} } },
+          { name: 'graph_grid', selector: select(['off', 'auto', 'nice', 'fixed'], 'grid') },
+          { name: 'graph_grid_step', selector: num(0.1, 100, 0.1) },
         ],
       },
     ],

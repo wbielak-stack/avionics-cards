@@ -18,6 +18,10 @@ export interface WindCardConfig {
   hours_forward?: number;
   wind_caution?: number;
   wind_warning?: number;
+  grid?: 'off' | 'auto' | 'nice' | 'fixed';
+  grid_step?: number;
+  /** staly gorny zakres osi wykresu */
+  y_max?: number;
 }
 
 export const WIND_DEFAULTS: Partial<WindCardConfig> = {
@@ -25,6 +29,7 @@ export const WIND_DEFAULTS: Partial<WindCardConfig> = {
   rotation: 0,
   hours_back: 12,
   hours_forward: 12,
+  grid: 'nice',
 };
 
 export function normalizeWind(c: WindCardConfig): WindCardConfig {

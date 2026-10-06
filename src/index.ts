@@ -9,6 +9,11 @@ import './cards/graph/index';
 import './cards/wind/index';
 import './cards/softkeys/index';
 import './cards/endurance/index';
+import './cards/goal/index';
+import './cards/forecast/index';
+import './cards/radar/index';
+import './cards/metar/index';
+import './cards/astro/index';
 
 declare const __AVIONICS_VERSION__: string;
 declare const __AVIONICS_BUILD__: string;

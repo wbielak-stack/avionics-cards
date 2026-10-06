@@ -3,6 +3,7 @@ import { FormEditor } from '../../core/form-editor';
 import { schemaSection, schemaGrid } from '../../core/row-list-editor';
 import type { WeatherCardConfig } from './config';
 import { FIELDS, WEATHER_ATTR, detectFromDevice } from './fields';
+import { gridSchema } from '../../core/grid';
 
 export class AvionicsWeatherCardEditor extends FormEditor<WeatherCardConfig & Record<string, unknown>> {
   protected labelPrefix = 'weather.editor.';
@@ -20,6 +21,8 @@ export class AvionicsWeatherCardEditor extends FormEditor<WeatherCardConfig & Re
       pressure_graph_ranges: '12, 24, 48',
       pressure_graph_reference: true,
       pressure_graph_position: 'auto' as const,
+      pressure_graph_grid: 'nice' as const,
+      wind_graph_grid: 'nice' as const,
       wind_forecast: true,
       wind_graph: false,
       wind_graph_position: 'auto' as const,
@@ -117,6 +120,7 @@ export class AvionicsWeatherCardEditor extends FormEditor<WeatherCardConfig & Re
                 { name: 'wind_caution', selector: { number: { step: 0.1, mode: 'box' } } },
                 { name: 'wind_warning', selector: { number: { step: 0.1, mode: 'box' } } },
               ]),
+              schemaGrid(gridSchema('wind_graph_grid', 'wind_graph_grid_step', (k) => this.t(k), c.wind_graph_grid)),
               ...(c.layout === 'boxes'
                 ? [
                     {
@@ -161,6 +165,7 @@ export class AvionicsWeatherCardEditor extends FormEditor<WeatherCardConfig & Re
                 { name: 'pressure_graph_ranges', selector: { text: {} } },
                 { name: 'pressure_graph_reference', selector: { boolean: {} } },
               ]),
+              schemaGrid(gridSchema('pressure_graph_grid', 'pressure_graph_grid_step', (k) => this.t(k), c.pressure_graph_grid)),
               ...(c.layout === 'boxes'
                 ? [
                     {

@@ -1,4 +1,5 @@
 import { LitElement, html, svg, nothing, css, type TemplateResult } from 'lit';
+import { gridValues, gridSvg } from '../../core/grid';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant, HassEntity } from '../../types';
@@ -326,6 +327,7 @@ export class AvionicsClimateCard extends LitElement {
     const y = (v: number) => 40 - ((v - lo) / range) * 40;
     const x = (k: number) => (k / (GRAPH_BUCKETS - 1)) * 100;
 
+    const gv = gridValues(lo, lo + range, { mode: c.graph_grid ?? 'off', step: c.graph_grid_step });
     let d = `M ${x(0)} ${y(vals[0]).toFixed(2)}`;
     for (let k = 1; k < GRAPH_BUCKETS; k++) d += ` L ${x(k).toFixed(2)} ${y(vals[k]).toFixed(2)}`;
 
@@ -342,6 +344,7 @@ export class AvionicsClimateCard extends LitElement {
             ${stops.map(([o, col]) => svg`<stop offset=${o} stop-color=${col}></stop>`)}
           </linearGradient>
         </defs>
+        ${gridSvg(gv, y, 100)}
         <path d=${`${d} L 100 40 L 0 40 Z`} fill="url(#g)" fill-opacity="0.35" stroke="none"></path>
         <path
           d=${d}

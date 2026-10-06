@@ -2,6 +2,7 @@ import { FormEditor } from '../../core/form-editor';
 import { schemaGrid as grid, schemaSection, numberSel as n, zoneFields } from '../../core/row-list-editor';
 import { zonesSummary } from '../../core/zones-summary';
 import type { ValueCardConfig } from './config';
+import { gridSchema } from '../../core/grid';
 
 export class AvionicsValueCardEditor extends FormEditor<ValueCardConfig & Record<string, unknown>> {
   protected labelPrefix = 'value.editor.';
@@ -63,6 +64,7 @@ export class AvionicsValueCardEditor extends FormEditor<ValueCardConfig & Record
                 { name: 'graph_min_range', selector: n() },
               ]),
               { name: 'graph_color', selector: { text: {} } },
+              grid(gridSchema('graph_grid', 'graph_grid_step', (k) => this.t(k), c.graph_grid)),
             ]
           : []),
       ]),

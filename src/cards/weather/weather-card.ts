@@ -402,6 +402,8 @@ export class AvionicsWeatherCard extends LitElement {
         .arrowTo=${(c.wind_arrow ?? 'from') === 'to'}
         .rotation=${c.rotation ?? 0}
         .unit=${r.wind_speed?.unit ?? ''}
+        .grid=${c.wind_graph_grid ?? 'nice'}
+        .gridStep=${num(c.wind_graph_grid_step)}
       ></avionics-wind-graph-el>
     </div>`;
   }
@@ -430,6 +432,8 @@ export class AvionicsWeatherCard extends LitElement {
         .reference=${c.pressure_graph_reference && hpa ? 1013.25 : NaN}
         .referenceLabel=${'1013'}
         .digits=${0}
+        .grid=${c.pressure_graph_grid ?? 'nice'}
+        .gridStep=${num(c.pressure_graph_grid_step)}
       ></avionics-graph-el>
     </div>`;
   }

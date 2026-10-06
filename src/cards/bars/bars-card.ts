@@ -10,6 +10,7 @@ import { readStyleMode, type StyleMode } from '../../core/style-mode';
 import { levelOf, type EisRowConfig } from '../eis/config';
 import { type BarsCardConfig, normalizeBars, parseHours } from './config';
 import { hourlySeries, windowBars, currentHourStart, type HourBar } from './series';
+import { gridValues, gridSvg, gridLabels, snapRange, fixedRange } from '../../core/grid';
 
 const W = 10; // szerokosc slotu godziny w ukladzie SVG
 const H = 100; // wysokosc obszaru slupkow
@@ -128,6 +129,10 @@ export class AvionicsBarsCard extends LitElement {
     const pad = (hi - lo || 1) * 0.08;
     hi += pad;
     lo = lo < 0 ? lo - pad : 0;
+    const g = { mode: c.grid ?? 'nice', step: c.grid_step };
+    if (typeof c.y_min === 'number' || typeof c.y_max === 'number') [lo, hi] = fixedRange(lo, hi, c.y_min, c.y_max);
+    else [lo, hi] = snapRange(lo, hi, g);
+    const gv = gridValues(lo, hi, g);
     const y = (v: number) => H - ((v - lo) / (hi - lo)) * H;
     const n = Math.max(bars.length, 1);
     const vbW = n * W;
@@ -164,6 +169,7 @@ export class AvionicsBarsCard extends LitElement {
 
         <div class="chart">
           <svg viewBox="0 0 ${vbW} ${H + BAND + 2}" preserveAspectRatio="none">
+            ${gridSvg(gv, y, vbW)}
             ${bars.map((b, i) => {
               const y0 = y(0);
               const y1 = y(b.v);
@@ -208,6 +214,7 @@ export class AvionicsBarsCard extends LitElement {
           ${curIdx >= 0
             ? html`<span class="now" style="left:${((curIdx + 0.5) / n) * 100}%">▼</span>`
             : nothing}
+          ${gridLabels(gv, (v) => (y(v) / (H + BAND + 2)) * 100, g, lo, hi, 'right')}
           ${midnights.map(
             (i) => html`<span class="date" style="left:${(i / n) * 100}%"
               >${new Date(bars[i].t).toLocaleDateString(getLanguage(this._hass), { day: '2-digit', month: '2-digit' })}</span

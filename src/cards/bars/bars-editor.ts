@@ -2,6 +2,7 @@ import { FormEditor } from '../../core/form-editor';
 import { schemaGrid as grid, schemaSection, numberSel as n, zoneFields } from '../../core/row-list-editor';
 import { zonesSummary } from '../../core/zones-summary';
 import { type BarsCardConfig, parseHoursDetailed } from './config';
+import { gridSchema } from '../../core/grid';
 
 export class AvionicsBarsCardEditor extends FormEditor<BarsCardConfig & Record<string, unknown>> {
   protected labelPrefix = 'bars.editor.';
@@ -16,6 +17,7 @@ export class AvionicsBarsCardEditor extends FormEditor<BarsCardConfig & Record<s
       final_multiplier: 1,
       good_direction: 'off' as const,
       show_midnight: true,
+      grid: 'nice' as const,
     };
   }
 
@@ -88,6 +90,11 @@ export class AvionicsBarsCardEditor extends FormEditor<BarsCardConfig & Record<s
       grid([
         { name: 'unit', selector: { text: {} } },
         { name: 'precision', selector: { number: { min: 0, max: 4, step: 1, mode: 'box' } } },
+      ]),
+      grid(gridSchema('grid', 'grid_step', (k) => this.t(k), c.grid)),
+      grid([
+        { name: 'y_min', selector: n() },
+        { name: 'y_max', selector: n() },
       ]),
       section('bars.editor.section.lines', [line(1), line(2), line(3)]),
       section('bars.editor.section.good', [

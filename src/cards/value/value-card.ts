@@ -10,6 +10,7 @@ import { fetchNumericHistory, type Point } from '../../core/history';
 import { fireMoreInfo } from '../../core/actions';
 import { readStyleMode, type StyleMode } from '../../core/style-mode';
 import { buildSpark } from '../../core/sparkline';
+import { gridValues, gridSvg } from '../../core/grid';
 import { levelOf, type Level } from '../eis/config';
 import { type ValueCardConfig, normalizeValueConfig } from './config';
 
@@ -197,6 +198,11 @@ export class AvionicsValueCard extends LitElement {
     if (!spark) return nothing;
     return html`
       <svg class="graph" viewBox="0 0 100 40" preserveAspectRatio="none">
+        ${gridSvg(
+          gridValues(spark.lo, spark.hi, { mode: c.graph_grid ?? 'off', step: c.graph_grid_step }),
+          (v) => 40 - ((v - spark.lo) / (spark.hi - spark.lo)) * 40,
+          100,
+        )}
         <path d=${spark.area} fill=${c.graph_color!} fill-opacity="0.35" stroke="none"></path>
         <path
           d=${spark.line}

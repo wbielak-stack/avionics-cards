@@ -36,6 +36,9 @@ export interface ValueCardConfig {
   /** minimalny zakres osi wykresu w jednostkach wyswietlanych */
   graph_min_range?: number;
   graph_color?: string;
+  /** podzialka wykresu w tle (domyslnie wylaczona) */
+  graph_grid?: 'off' | 'auto' | 'nice' | 'fixed';
+  graph_grid_step?: number;
 }
 
 export const VALUE_DEFAULTS: Partial<ValueCardConfig> = {

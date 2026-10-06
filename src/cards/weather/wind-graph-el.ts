@@ -3,6 +3,7 @@ import { property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from '../../types';
 import { fetchNumericHistory, type Point } from '../../core/history';
 import { num } from '../../core/format';
+import { type GridMode, gridValues, gridSvg, gridLabels, snapRange } from '../../core/grid';
 
 const HOUR = 3600e3;
 const HISTORY_REFRESH_MS = 10 * 60 * 1000;
@@ -57,6 +58,10 @@ export class AvionicsWindGraphEl extends LitElement {
   @property({ type: Boolean }) arrowTo = false;
   @property({ type: Number }) rotation = 0;
   @property() unit = '';
+  @property() grid: GridMode = 'nice';
+  @property({ type: Number }) gridStep = NaN;
+  /** staly gorny zakres osi (rozszerzany tylko, gdy wiatr go przekroczy) */
+  @property({ type: Number }) yMax = NaN;
 
   @state() private _hist: Record<'speed' | 'gust' | 'dir', Point[]> = { speed: [], gust: [], dir: [] };
   @state() private _forecast: Array<Record<string, unknown>> = [];
@@ -171,7 +176,10 @@ export class AvionicsWindGraphEl extends LitElement {
       ...hours.map((h) => Math.max(h.speed ?? 0, h.gust ?? 0)),
       Number.isFinite(this.caution) ? this.caution : 0,
     );
-    const top = maxV * 1.1;
+    const g = { mode: this.grid, step: this.gridStep };
+    let top = Number.isFinite(this.yMax) ? Math.max(this.yMax, maxV) : maxV * 1.1;
+    if (!Number.isFinite(this.yMax)) top = snapRange(0, top, g)[1];
+    const gv = gridValues(0, top, g);
     const y = (v: number) => H - (v / top) * H;
     const now = hourStart(Date.now());
     const nowIdx = hours.findIndex((h) => h.t === now);
@@ -184,6 +192,7 @@ export class AvionicsWindGraphEl extends LitElement {
     return html`
       <div class="chart">
         <svg viewBox="0 0 ${n * W} ${H}" preserveAspectRatio="none">
+          ${gridSvg(gv, y, n * W)}
           ${Number.isFinite(this.caution) ? line(this.caution, 'thr caution') : nothing}
           ${Number.isFinite(this.warning) && this.warning < top ? line(this.warning, 'thr warning') : nothing}
           ${hours.map((h, i) => {
@@ -205,7 +214,9 @@ export class AvionicsWindGraphEl extends LitElement {
             ? svg`<line class="nowline" x1=${(nowIdx + 1) * W} x2=${(nowIdx + 1) * W} y1="0" y2=${H} vector-effect="non-scaling-stroke"></line>`
             : nothing}
         </svg>
-        <span class="ymax">${top.toFixed(0)}${this.unit ? ` ${this.unit}` : ''}</span>
+        ${this.grid === 'nice' || this.grid === 'fixed'
+          ? gridLabels(gv, (v) => (y(v) / H) * 100, g, 0, top)
+          : html`<span class="ymax">${top.toFixed(0)}${this.unit ? ` ${this.unit}` : ''}</span>`}
         ${nowIdx >= 0 ? html`<span class="now" style="left:${((nowIdx + 0.5) / n) * 100}%">▼</span>` : nothing}
       </div>
       <div class="arrows">

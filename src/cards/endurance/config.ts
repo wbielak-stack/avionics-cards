@@ -21,6 +21,8 @@ export interface EnduranceCardConfig {
   trajectory_attribute?: string;
   show_profile?: boolean;
   profile_hours?: number;
+  profile_grid?: 'off' | 'auto' | 'nice' | 'fixed';
+  profile_grid_step?: number;
   label_nopv?: string;
   label_pv?: string;
   /** powyzej (albo brak wartosci) - "> N h" */
@@ -44,6 +46,7 @@ export const ENDURANCE_DEFAULTS: Partial<EnduranceCardConfig> = {
   trajectory_attribute: 'soc_trajectory',
   show_profile: true,
   profile_hours: 24,
+  profile_grid: 'nice',
   max_hours: 36,
   caution_hours: 6,
   warning_hours: 3,

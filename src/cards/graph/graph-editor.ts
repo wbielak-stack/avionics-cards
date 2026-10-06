@@ -1,6 +1,7 @@
 import { FormEditor } from '../../core/form-editor';
 import { schemaGrid as grid, schemaSection, numberSel as n } from '../../core/row-list-editor';
 import type { GraphCardConfig } from './config';
+import { gridSchema } from '../../core/grid';
 
 export class AvionicsGraphCardEditor extends FormEditor<GraphCardConfig & Record<string, unknown>> {
   protected labelPrefix = 'graph.editor.';
@@ -13,6 +14,7 @@ export class AvionicsGraphCardEditor extends FormEditor<GraphCardConfig & Record
       span: 20,
       multiplier: 1,
       graph_style: 'mono' as const,
+      grid: 'nice' as const,
     };
   }
 
@@ -35,6 +37,11 @@ export class AvionicsGraphCardEditor extends FormEditor<GraphCardConfig & Record
           },
         },
         ...(c.scale === 'fixed' ? [{ name: 'span', selector: n() }] : []),
+      ]),
+      grid(gridSchema('grid', 'grid_step', (k) => this.t(k), c.grid)),
+      grid([
+        { name: 'y_min', selector: n() },
+        { name: 'y_max', selector: n() },
       ]),
       schemaSection(this.t('graph.editor.section.more'), [
         grid([

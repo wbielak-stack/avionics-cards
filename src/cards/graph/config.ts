@@ -18,6 +18,12 @@ export interface GraphCardConfig {
   color?: string;
   /** mono albo temperature (gradient wg progow temperatury) */
   graph_style?: 'mono' | 'temperature';
+  /** podzialka: off / auto / nice / fixed (krok grid_step) */
+  grid?: 'off' | 'auto' | 'nice' | 'fixed';
+  grid_step?: number;
+  /** staly zakres osi (rozszerzany tylko, gdy dane wyjda poza) */
+  y_min?: number;
+  y_max?: number;
 }
 
 export const GRAPH_DEFAULTS: Partial<GraphCardConfig> = {
@@ -28,6 +34,7 @@ export const GRAPH_DEFAULTS: Partial<GraphCardConfig> = {
   multiplier: 1,
   color: '#00e5ff',
   graph_style: 'mono',
+  grid: 'nice',
 };
 
 export function normalizeGraph(c: GraphCardConfig): GraphCardConfig {
