@@ -14,6 +14,7 @@ import './cards/forecast/index';
 import './cards/radar/index';
 import './cards/metar/index';
 import './cards/astro/index';
+import './cards/tank/index';
 
 declare const __AVIONICS_VERSION__: string;
 declare const __AVIONICS_BUILD__: string;

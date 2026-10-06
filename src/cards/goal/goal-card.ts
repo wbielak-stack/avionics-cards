@@ -121,7 +121,30 @@ export class AvionicsGoalCard extends LitElement {
     `;
   }
 
+  /** Wartosc biezaca, cel, poczatek i tempo na dobe wiersza. */
+  private _metrics(r: GoalRowConfig, i: number) {
+    const cur = this._src(i, 'c', { entity: r.current_entity, attribute: r.current_attribute, template: r.current_template });
+    const target = this._src(i, 't', { value: r.target, entity: r.target_entity, template: r.target_template });
+    const start = r.start ?? 0;
+    let rate = this._src(i, 'r', { entity: r.rate_entity, template: r.rate_template });
+    if (!Number.isFinite(rate) && r.start_date) {
+      const days = (Date.now() - Date.parse(r.start_date)) / DAY;
+      if (days > 0) rate = (cur - start) / Math.max(days, 1);
+    }
+    return { cur, target, start, rate };
+  }
+
+  /** Resurs dla prognozy: wskazany wiersz albo pierwszy wiersz typu limit. */
+  private _life(r: GoalRowConfig) {
+    const idx = this._rows.findIndex((x) => x.kind === 'limit' && (!r.life_row || x.name === r.life_row));
+    if (idx < 0) return undefined;
+    const m = this._metrics(this._rows[idx], idx);
+    if (!Number.isFinite(m.cur) || !(m.target > m.cur) || !(m.rate > 0)) return undefined;
+    return { used: m.cur, limit: m.target, rate: m.rate };
+  }
+
   private _renderRow(r: GoalRowConfig, i: number) {
+    if (r.kind !== 'limit' && (r.projection ?? 'payback') !== 'payback') return this._renderRoute(r, i);
     const t = (k: string) => localize(getLanguage(this._hass), k);
     const cur = this._src(i, 'c', { entity: r.current_entity, attribute: r.current_attribute, template: r.current_template });
     const target = this._src(i, 't', { value: r.target, entity: r.target_entity, template: r.target_template });
@@ -204,6 +227,130 @@ export class AvionicsGoalCard extends LitElement {
               ? nothing
               : html`<span class="fc">ETE ${this._ete(eteDays, t)} · ETA ${this._eta(eteDays)}</span>`}
           </div>`}
+    </div>`;
+  }
+
+  /**
+   * Trasa celu z punktami (tryby target_pct / end_of_life): pasek od 0 do celu, punkty trasy,
+   * koniec resursu, lista jak strona FPL (punkt, kwota, ETE, ETA).
+   * Prognoza: tempo od daty startu; przy pojemnosci konca resursu < 100 % zysk na dobe maleje liniowo z cyklami.
+   */
+  private _renderRoute(r: GoalRowConfig, i: number) {
+    const t = (k: string) => localize(getLanguage(this._hass), k);
+    const { cur, target, start, rate } = this._metrics(r, i);
+    const unit = r.unit ?? (r.current_entity ? this._hass!.states[r.current_entity]?.attributes?.unit_of_measurement ?? '' : '');
+    const u = unit ? ` ${unit}` : '';
+    const span = target - start;
+    if (!Number.isFinite(cur) || !Number.isFinite(target) || !(span > 0)) {
+      return html`<div class="row"><div class="head"><span class="lbl">${r.name ?? ''}</span><span class="v na">--</span></div></div>`;
+    }
+    const pctOf = (v: number) => ((v - start) / span) * 100;
+    const valOf = (pct: number) => start + (span * pct) / 100;
+    const life = this._life(r);
+    const gs = rate;
+
+    // --- prognoza zysku do konca resursu ---
+    let profitAt: ((c: number) => number) | undefined;
+    let eolProfit = NaN;
+    let eolDays = NaN;
+    if (life && gs > 0) {
+      const L = life.limit;
+      const c0 = life.used;
+      const fade = 1 - (r.eol_capacity ?? 100) / 100;
+      // tempo dotad odpowiada sredniej pojemnosci z dotychczasowych cykli
+      const capAvg = 1 - (fade * (c0 / 2)) / L;
+      const perCycle = gs / life.rate / capAvg;
+      profitAt = (c: number) => cur + perCycle * (c - c0 - (fade / (2 * L)) * (c * c - c0 * c0));
+      eolProfit = profitAt(L);
+      eolDays = (L - c0) / life.rate;
+    }
+    /** Dni do osiagniecia kwoty P (NaN = za koncem resursu albo brak tempa). */
+    const daysTo = (P: number): number => {
+      if (P <= cur) return 0;
+      if (!(gs > 0)) return NaN;
+      if (!life || !profitAt) return (P - cur) / gs;
+      if (P > eolProfit) return NaN;
+      let a = life.used;
+      let b = life.limit;
+      for (let k = 0; k < 40; k++) {
+        const m = (a + b) / 2;
+        if (profitAt(m) < P) a = m;
+        else b = m;
+      }
+      return (b - life.used) / life.rate;
+    };
+
+    const eol = r.projection === 'end_of_life';
+    if (eol && !Number.isFinite(eolProfit)) {
+      return html`<div class="row"><div class="head"><span class="lbl">${r.name ?? ''}</span><span class="v">${this._fmt(r, cur)}<span class="u">${unit}</span></span></div>
+        <div class="sub">${t('goal.no_life')}</div></div>`;
+    }
+    const dest = eol ? eolProfit : valOf(r.target_pct ?? 150);
+    const destPct = pctOf(dest);
+    const beyond = !eol && Number.isFinite(eolProfit) && dest > eolProfit; // cel za koncem resursu
+
+    // punkty trasy do celu (i nie dalej niz koniec resursu)
+    const limitPct = Number.isFinite(eolProfit) ? Math.min(destPct, pctOf(eolProfit)) : destPct;
+    const wps = (r.waypoints ?? '')
+      .split(/[,;\s]+/)
+      .map((x) => parseFloat(x))
+      .filter((x) => x > 0 && x < destPct - 0.5 && x <= limitPct + 1e-9)
+      .sort((a, b) => a - b);
+    type Leg = { label: string; value: number; days: number; kind: 'wp' | 'dest' | 'eol' };
+    const legs: Leg[] = wps.map((p) => ({ label: p === 100 ? `${p} % · ${t('goal.payback')}` : `${p} %`, value: valOf(p), days: daysTo(valOf(p)), kind: 'wp' }));
+    if (eol) legs.push({ label: t('goal.eol'), value: dest, days: eolDays, kind: 'eol' });
+    else {
+      legs.push({ label: `${Math.round(destPct)} % · ${t('goal.target')}`, value: dest, days: daysTo(dest), kind: 'dest' });
+      if (beyond) legs.splice(legs.length - 1, 0, { label: t('goal.eol'), value: eolProfit, days: eolDays, kind: 'eol' });
+    }
+    const activeIdx = legs.findIndex((l) => l.value > cur);
+
+    const vmax = Math.max(dest, cur);
+    // jak plan lotu: aktywny odcinek do najblizszego punktu (magenta), dalsze odcinki biale
+    const routeEnd = Math.min(dest, Number.isFinite(eolProfit) ? eolProfit : dest);
+    const activeEnd = Math.min(activeIdx >= 0 ? legs[activeIdx].value : routeEnd, routeEnd);
+    const p = (v: number) => Math.min(Math.max((v - Math.min(start, 0)) / (vmax - Math.min(start, 0)), 0), 1) * 100;
+    const toGo = dest - cur;
+    const ete = daysTo(dest);
+    const dTotal = eol ? eolDays : ete;
+
+    return html`<div class="row" @click=${() => r.current_entity && fireMoreInfo(this, r.current_entity)}>
+      <div class="head">
+        <span class="lbl">${r.name ?? ''}</span>
+        <span class="v">${this._fmt(r, cur)}<span class="u">${unit}</span></span>
+      </div>
+      <div class="sub">
+        ${eol ? t('goal.forecast_eol') : t('goal.target')}: ${this._fmt(r, dest)}${u} · ${destPct.toFixed(0)} %
+        ${r.eol_capacity !== undefined && r.eol_capacity < 100 ? html` · ${t('goal.fade')} ${r.eol_capacity} %` : nothing}
+      </div>
+      <div class="bar">
+        <div class="band"></div>
+        <div class="seg done" style="left:0;width:${p(cur)}%"></div>
+        <div class="seg togo" style="left:${p(cur)}%;width:${p(activeEnd) - p(cur)}%"></div>
+        <div class="seg later" style="left:${p(activeEnd)}%;width:${p(routeEnd) - p(activeEnd)}%"></div>
+        ${beyond ? html`<div class="seg beyond" style="left:${p(eolProfit)}%;width:${p(dest) - p(eolProfit)}%"></div>` : nothing}
+        ${wps.map((w) => html`<div class="wpm ${valOf(w) <= cur ? 'passed' : ''}" style="left:${p(valOf(w))}%"><span>${w}</span></div>`)}
+        ${Number.isFinite(eolProfit) && eolProfit <= vmax ? html`<div class="eolmk" style="left:${p(eolProfit)}%"></div>` : nothing}
+        <div class="mk tgt" style="left:${p(dest)}%"></div>
+        <div class="mk cur" style="left:${p(cur)}%"></div>
+      </div>
+      <div class="nav">
+        <div><span class="nl">DIS</span><span class="nv">${this._fmt(r, toGo)}${u}</span></div>
+        <div><span class="nl">GS</span><span class="nv">${Number.isFinite(gs) ? `${this._fmt(r, gs)}${u}/${t('goal.day')}` : '—'}</span></div>
+        <div><span class="nl">ETE</span><span class="nv fc">${this._ete(dTotal, t)}</span></div>
+        <div><span class="nl">ETA</span><span class="nv fc">${this._eta(dTotal)}</span></div>
+      </div>
+      <div class="fpl">
+        ${legs.map(
+          (l, k) => html`<div class=${`leg ${k < activeIdx || activeIdx < 0 ? 'passed' : k === activeIdx ? 'active' : ''} ${l.kind}`}>
+            <span class="ln">${l.label}</span>
+            <span class="lv">${this._fmt(r, l.value)}${u}</span>
+            <span class="lt">${l.value <= cur ? '✓' : this._ete(l.days, t)}</span>
+            <span class="lt">${l.value <= cur ? '' : this._eta(l.days)}</span>
+          </div>`,
+        )}
+        ${beyond ? html`<div class="note">${t('goal.beyond')}</div>` : nothing}
+      </div>
     </div>`;
   }
 
@@ -340,6 +487,75 @@ export class AvionicsGoalCard extends LitElement {
       }
       .foot .fc {
         font-weight: 700;
+      }
+      /* --- trasa z punktami --- */
+      .seg.later {
+        background: var(--av-value);
+      }
+      .seg.beyond {
+        background: repeating-linear-gradient(90deg, var(--av-dim) 0 4px, transparent 4px 8px);
+      }
+      .wpm {
+        position: absolute;
+        top: 6px;
+        width: 2px;
+        height: 12px;
+        margin-left: -1px;
+        background: var(--av-setpoint);
+      }
+      .wpm.passed {
+        background: var(--av-dim);
+      }
+      .wpm span {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 9px;
+        color: var(--av-dim);
+        white-space: nowrap;
+      }
+      .eolmk {
+        position: absolute;
+        top: 3px;
+        width: 3px;
+        height: 18px;
+        margin-left: -1px;
+        background: var(--av-caution);
+      }
+      .row .bar {
+        margin-bottom: 10px;
+      }
+      .fpl {
+        margin-top: 8px;
+        border-top: 1px solid rgba(140, 140, 140, 0.35);
+        padding-top: 4px;
+      }
+      .leg {
+        display: grid;
+        grid-template-columns: 1fr auto 64px 64px;
+        gap: 8px;
+        align-items: baseline;
+        padding: 1px 0;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .leg .lt {
+        text-align: right;
+      }
+      .leg.passed {
+        color: var(--av-dim);
+      }
+      .leg.active {
+        color: var(--av-forecast);
+      }
+      .leg.eol .ln {
+        color: var(--av-caution);
+      }
+      .note {
+        margin-top: 4px;
+        font-size: 11px;
+        color: var(--av-caution);
       }
     `,
   ];

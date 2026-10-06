@@ -30,6 +30,19 @@ export interface GoalRowConfig {
   /** strefy resursu w % limitu */
   caution_pct?: number;
   warning_pct?: number;
+  /**
+   * cel wiersza goal: payback = do zwrotu (100 % celu, jak dotad), target_pct = do zadanego zysku,
+   * end_of_life = do konca resursu (prognoza z wiersza limitu w tej karcie)
+   */
+  projection?: 'payback' | 'target_pct' | 'end_of_life';
+  /** zadany zysk w % celu (tryb target_pct) */
+  target_pct?: number;
+  /** punkty trasy w % celu, np. "100, 150, 200" */
+  waypoints?: string;
+  /** pojemnosc na koniec resursu w % (100 = bez korekty) */
+  eol_capacity?: number;
+  /** nazwa wiersza resursu (domyslnie pierwszy wiersz typu limit) */
+  life_row?: string;
 }
 
 export interface GoalCardConfig {
@@ -39,5 +52,17 @@ export interface GoalCardConfig {
 }
 
 export function normalizeGoalRow(r: GoalRowConfig): GoalRowConfig {
-  return { kind: 'goal', start: 0, marker: 'target', marker_color: 'forecast', caution_pct: 80, warning_pct: 95, ...clean(r) } as GoalRowConfig;
+  return {
+    kind: 'goal',
+    start: 0,
+    marker: 'target',
+    marker_color: 'forecast',
+    caution_pct: 80,
+    warning_pct: 95,
+    projection: 'payback',
+    target_pct: 150,
+    waypoints: '100, 150, 200, 250, 300',
+    eol_capacity: 100,
+    ...clean(r),
+  } as GoalRowConfig;
 }

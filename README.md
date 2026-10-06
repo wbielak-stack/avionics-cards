@@ -27,6 +27,7 @@ forecasts, amber for cautions and red for warnings.
 | Avionics Radar | `custom:avionics-radar-card` | Precipitation radar like NEXRAD on an MFD |
 | Avionics METAR | `custom:avionics-metar-card` | METAR for an airport: flight category, raw report, decoded fields |
 | Avionics Astro | `custom:avionics-astro-card` | Sun and moon: day profile, twilight, day length, moon phase |
+| Avionics Tank | `custom:avionics-tank-card` | Level like a fuel gauge: battery SoC, water, pellets |
 | Avionics Climate | `custom:avionics-climate-card` | Room tile with background graph and climate / heating-mat control |
 
 ## Installation
@@ -570,6 +571,13 @@ Rows of two kinds:
   **DIS** (left to go), **GS** (rate per day), **ETE** and **ETA**; after the goal is reached a
   green *REACHED ✓* badge appears, the bar starts again (100 % is the new zero) and the full value
   stays visible, e.g. *9840 / 8000 · 123 %*
+- goal rows can also aim further, like a flight plan with waypoints (only the active leg — to the
+  next waypoint — is magenta, later legs are white): **given profit** (e.g. 150 %) or
+  **end of cycle life** — the end is forecast from the limit row in the same card (cycles left at the
+  current cycle rate) and the current profit rate; waypoints (e.g. 100, 150, 200 %) are shown up to
+  the end of life with a flight-plan list (amount, ETE, ETA); a target beyond the end of life is
+  marked as such; optional capacity at end of life (default 100 % = no correction) lowers the profit
+  rate linearly with the cycles used
 - **limit** — wear to a limit like engine time to TBO: used part, amber / red zones near the limit,
   remaining %, and when the limit will be reached; above 100 % the bar turns red with *EXCEEDED*
 
@@ -604,6 +612,9 @@ entities:
 | `start_date` / `rate_entity` / `rate_template` | Rate per day (GS) |
 | `marker`, `marker_value` / `marker_entity` / `marker_template`, `marker_color` | `target` (default), `custom` or `off`; colour `forecast` (magenta, default) or `setpoint` (cyan) |
 | `caution_pct`, `warning_pct` | Limit zones, default `80` / `95` % |
+| `projection` | `payback` (default, unchanged), `target_pct` or `end_of_life` |
+| `target_pct`, `waypoints` | Given profit in % of the goal (default `150`); waypoints in % (default `100, 150, 200, 250, 300`) |
+| `eol_capacity`, `life_row` | Capacity at end of life in % (default `100`); name of the cycle-life row (default: first limit row) |
 | `unit`, `precision` | Display |
 
 ## Avionics Forecast
@@ -749,6 +760,55 @@ type: custom:avionics-astro-card
 |---|---|---|
 | `show_profile`, `show_sun`, `show_moon` | `true` | Sections |
 | `latitude`, `longitude` | home | Location |
+
+## Avionics Tank
+
+A level shown like a fuel quantity gauge — battery state of charge, a water tank, pellets. Large
+value (amber / red in the reserve zones), a horizontal bar or a vertical tank (`auto` picks by the
+tile shape), the target as a cyan mark while buying / selling, and two values: **stock** and **time** —
+*to target* while a target is active, *to full* while charging, otherwise **ENDUR** (from a forecast
+entity / attribute, or stock / current power). In the vertical layout the two values sit side by side
+and move one under the other when there is not enough room.
+
+Zones work both ways. A battery or a heating-oil tank needs the **low** zones (reserve); a
+**rainwater tank** or a waste tank needs the **high** ones — red when full, not when empty:
+
+```yaml
+type: custom:avionics-tank-card
+name: Rainwater
+entity: sensor.rainwater_level
+warning_low: 0          # no low zones
+caution_low: 0
+caution_high: 85
+warning_high: 95
+```
+
+```yaml
+type: custom:avionics-tank-card
+entity: sensor.battery_soc
+stock_entity: sensor.battery_remaining_wh
+stock_multiplier: 0.001        # Wh -> kWh
+capacity: 40
+power_entity: sensor.battery_power
+power_multiplier: 0.001
+status_positive: CHG
+status_negative: DSG
+target_entity: input_number.buy_target_soc
+target_active_entity: input_boolean.buy_active
+endurance_entity: sensor.battery_forecast
+endurance_attribute: autonomy_nopv_h
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `entity`, `name`, `precision` | —, `SOC`, `1` | Level in %, title, decimals |
+| `layout` | `auto` | `auto`, `horizontal` or `vertical` |
+| `warning_low`, `caution_low` | `10`, `20` | Low zones — red / amber below (`0` = no zone) |
+| `caution_high`, `warning_high` | — | High zones — amber / red above, drawn at the full end |
+| `stock_entity`, `stock_multiplier`, `capacity`, `stock_unit` | —, `1`, —, `kWh` | Stock from an entity, or level × capacity |
+| `power_entity`, `power_multiplier`, `power_unit`, `status_positive`, `status_negative`, `deadband` | — | Power and direction in the header |
+| `target_entity` / `target`, `target_active_entity`, `target2_entity`, `target2_active_entity` | — | Target shown while its active entity is `on` |
+| `endurance_entity`, `endurance_attribute`, `caution_hours`, `warning_hours` | —, —, `6`, `3` | ENDUR source and thresholds |
 
 ## Avionics Climate
 

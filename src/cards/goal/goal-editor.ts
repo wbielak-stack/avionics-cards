@@ -9,7 +9,18 @@ export class AvionicsGoalCardEditor extends RowListEditor<GoalRowConfig> {
   }
 
   protected rowFormDefaults(): Partial<GoalRowConfig> {
-    return { kind: 'goal', start: 0, marker: 'target', marker_color: 'forecast', caution_pct: 80, warning_pct: 95 };
+    return {
+      kind: 'goal',
+      start: 0,
+      marker: 'target',
+      marker_color: 'forecast',
+      caution_pct: 80,
+      warning_pct: 95,
+      projection: 'payback',
+      target_pct: 150,
+      waypoints: '100, 150, 200, 250, 300',
+      eol_capacity: 100,
+    };
   }
 
   protected rowSchema(row: GoalRowConfig) {
@@ -62,6 +73,25 @@ export class AvionicsGoalCardEditor extends RowListEditor<GoalRowConfig> {
             ]
           : []),
       ]),
+      ...(row.kind !== 'limit'
+        ? [
+            section('goal.editor.section.projection', [
+              grid([
+                { name: 'projection', selector: sel(['payback', 'target_pct', 'end_of_life'], 'goal.editor.projection') },
+                ...(row.projection === 'target_pct' ? [{ name: 'target_pct', selector: n() }] : []),
+              ]),
+              ...(row.projection && row.projection !== 'payback'
+                ? [
+                    grid([
+                      { name: 'waypoints', selector: { text: {} } },
+                      { name: 'eol_capacity', selector: { number: { min: 30, max: 100, step: 1, mode: 'box' } } },
+                    ]),
+                    { name: 'life_row', selector: { text: {} } },
+                  ]
+                : []),
+            ]),
+          ]
+        : []),
       ...(row.kind === 'limit'
         ? [
             section('goal.editor.section.zones', [
