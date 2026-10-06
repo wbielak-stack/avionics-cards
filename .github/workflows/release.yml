@@ -12,10 +12,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: npm
       - run: npm ci
       - name: Tag zgodny z package.json
@@ -26,7 +26,13 @@ jobs:
           fi
       - run: npm run typecheck
       - run: npm run build
+      # opis wydania: sekcja tej wersji z CHANGELOG.md
+      - name: Opis wydania z CHANGELOG.md
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          awk -v v="$VER" '$0 ~ "^## "v"$" {f=1; next} /^## / && f {exit} f' CHANGELOG.md > release-notes.md
+          test -s release-notes.md || { echo "Brak sekcji $VER w CHANGELOG.md"; exit 1; }
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/avionics-cards.js
-          generate_release_notes: true
+          body_path: release-notes.md

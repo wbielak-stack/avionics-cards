@@ -1,11 +1,37 @@
 # Avionics Cards
 
-Glass-cockpit inspired dashboard cards for [Home Assistant](https://www.home-assistant.io/).
-Black background, thin frames, condensed digits and a strict colour language borrowed
-from aircraft avionics: white for values, cyan for set points, magenta for
-forecasts, amber for cautions and red for warnings.
+![Avionics Cards dashboards](docs/hero.png)
 
-> **Status: work in progress (0.x).** Card configuration may still change between versions.
+**Bring a glass cockpit to your smart home.**
+
+Avionics Cards is a set of [Home Assistant](https://www.home-assistant.io/) dashboard cards built on the
+display conventions of modern glass cockpits, such as the Garmin G1000 family. Those screens have been
+refined for decades for one job: showing a lot of live data so that it can be read at a glance, and read
+correctly, in a demanding environment where a misread value has real consequences. Instead of inventing
+a new visual language, this project borrows one that is already proven.
+
+What that means on a dashboard:
+
+- **Colour carries meaning.** White is a current value, cyan is what you set, magenta is a forecast or a
+  computed value, green is active, amber needs attention and red is a warning. Nothing is coloured for
+  decoration, so when something turns amber, you notice.
+- **Familiar instruments for home data.** Engine-style bars with zones, gauges with red lines, a fuel
+  computer for the home battery, a flight plan for payback, a NEXRAD-style radar, an electrical synoptic.
+- **Calm by default.** Dark background, thin frames, condensed digits, no decoration competing for
+  attention.
+
+Why a whole set:
+
+- **One consistent interface:** 21 cards (and counting) share colours, headers, zones and the grid,
+  instead of a dashboard assembled from cards that each look different. There is even a card that brings
+  other cards into line — see [Avionics Frame](#avionics-frame) around a Sankey Chart.
+- **The missing pieces:** cards for things Home Assistant has no good card for, such as battery
+  endurance, return on investment, cloud layers, METAR or a synoptic diagram.
+- **The Home Assistant way:** every card has a visual editor, works in the sections view and follows the
+  theme. YAML is optional.
+
+> **Status: 0.2, work in progress.** Card configuration may still change between 0.x versions; changes
+> are listed in the [changelog](CHANGELOG.md).
 
 ## Cards
 
@@ -270,6 +296,8 @@ entities:
 
 ## Avionics Bars
 
+![Avionics Bars — energy price](docs/bars.png)
+
 Hourly bar chart from a list in an entity attribute — typically energy prices or
 forecasts. Periods shorter than an hour (e.g. 15-minute prices) are averaged per hour.
 
@@ -431,6 +459,8 @@ wind_warning: 35
 
 ## Avionics Graph
 
+![Avionics Graph](docs/graph.png)
+
 History graph of a single entity with range buttons on the card itself.
 
 - **fit to height** — any change fills the graph (good for spotting small variations)
@@ -463,6 +493,10 @@ reference_label: "1013"
 | `unit`, `precision`, `multiplier`, `color` | entity, entity, `1`, `#00e5ff` | Display options |
 
 ## Avionics Softkeys
+
+![Avionics Softkeys — list with lamps](docs/softkeys.png)
+
+![Avionics Softkeys — set value](docs/softkeys-trade.png) ![Avionics Softkeys — row and list](docs/softkeys-lamps.png)
 
 Function buttons styled after cockpit controls. One button is a single tile; several share one
 frame with an optional title, as a list of tiles or a row of keys. Two button styles:
@@ -528,6 +562,8 @@ Card options: `title`, `layout` (`list` or `row`), `key_style` (`lamp` or `inver
 
 ## Avionics Endurance
 
+![Avionics Endurance](docs/endurance.png)
+
 A fuel computer for a home battery — the energy storage is the fuel tank:
 
 - **ENDUR** (time to empty) and **ETA** (clock time) for two scenarios: *without PV* (current
@@ -567,6 +603,8 @@ warning_hours: 3
 | `show_profile`, `profile_hours` | `true`, `24` | SoC profile |
 
 ## Avionics Goal
+
+![Avionics Goal — cycle life and payback with waypoints](docs/goal.png)
 
 Rows of two kinds:
 
@@ -622,6 +660,8 @@ entities:
 
 ## Avionics Forecast
 
+![Avionics Forecast](docs/forecast.png)
+
 Hourly forecast fetched directly from [Open-Meteo](https://open-meteo.com) for the home location
 (no API key). Rows are ordered from the sky to the ground and each can be turned off:
 
@@ -662,6 +702,8 @@ pv_azimuth: 0
 
 ## Avionics Radar
 
+![Avionics Radar](docs/radar.png)
+
 Precipitation radar in the style of the NEXRAD overlay on a cockpit MFD: black background with a
 vector map like an MFD (borders, coastlines, rivers, lakes and cities from Natural Earth, drawn over
 the radar so they stay visible), home in
@@ -701,6 +743,8 @@ distance_unit: km
 | `latitude`, `longitude` | home | Centre |
 
 ## Avionics METAR
+
+![Avionics METAR](docs/metar.png)
 
 Current METAR for an airport from [aviationweather.gov](https://aviationweather.gov/data/api/), decoded
 in the card: flight category badge (VFR green, MVFR blue, IFR red, LIFR magenta), observation time in
@@ -743,6 +787,8 @@ entity: sensor.metar_epkk
 
 ## Avionics Astro
 
+![Avionics Astro](docs/astro.png)
+
 Sun and moon computed in the card from the home location (SunCalc formulas — no extra entities):
 
 - **day profile** — background by time of day (civil twilight, nautical twilight, night), the
@@ -765,6 +811,8 @@ type: custom:avionics-astro-card
 | `latitude`, `longitude` | home | Location |
 
 ## Avionics Tank
+
+![Avionics Tank](docs/tank.png)
 
 A level shown like a fuel quantity gauge — battery state of charge, a water tank, pellets. Large
 value (amber / red in the reserve zones), a horizontal bar or a vertical tank (`auto` picks by the
@@ -815,6 +863,8 @@ endurance_attribute: autonomy_nopv_h
 
 ## Avionics Cylinders
 
+![Avionics Cylinders — phase voltage and current](docs/cylinders.png)
+
 Similar values side by side, like the cylinder bars on the G1000 LEAN page: battery cells or
 modules, room temperatures, inverter phases, PV strings. A common scale (zoomed to the data when
 `min` / `max` are not set — cell voltages differ by millivolts), shared zones, an optional red limit
@@ -847,6 +897,8 @@ caution_low: 3.2
 | zones, `zones_from_entities`, `warning_inverse` | — | As in the other cards |
 
 ## Avionics Synoptic
+
+![Avionics Synoptic](docs/synoptic.png)
 
 An electrical synoptic like the system pages of the G3000: a **DC bus** (PV strings, battery), the
 **inverter** as its own block (AC power, temperature, conversion loss), an **AC bus** (house, grid,
@@ -899,6 +951,8 @@ kW to the card unit), `unit` (`kW`),
 
 ## Avionics Frame
 
+![Avionics Frame around Sankey Chart](docs/frame-sankey.png)
+
 The avionics header and frame around **any** card — e.g. Sankey Chart, an entities card or a history
 graph — so it looks like the rest of the set without card-mod. The inner card's own background,
 border and shadow are switched off with theme variables; remove its own title and put the title in
@@ -917,6 +971,41 @@ card:
 | `title` | — | Header |
 | `card` | — | The card inside |
 | `padding` | `false` | Inner margin around the card |
+
+## Avionics Climate
+
+![Avionics Climate](docs/climate.png)
+
+Room tile with a background temperature graph, comfort indicator and one-tap control
+of an air conditioner or heating mat. Fully configurable in the visual editor.
+
+```yaml
+type: custom:avionics-climate-card
+name: Living room
+temperature_entity: sensor.living_room_temperature
+humidity_entity: sensor.living_room_humidity
+climate_entity: climate.living_room
+co2_entity: sensor.living_room_co2        # optional
+pm25_entity: sensor.living_room_pm25      # optional
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `name` | — | Tile title |
+| `mode` | `room` | `room` or `outdoor` (reference tile: MIN/MAX of the last 24 h instead of unit/set point) |
+| `temperature_entity` | — | Temperature sensor. If missing or unavailable, `current_temperature` of the climate entity is used |
+| `humidity_entity` | — | Humidity sensor |
+| `climate_entity` | — | Climate entity; tap toggles it, hold opens more-info |
+| `co2_entity`, `pm25_entity` | — | Optional air quality sensors |
+| `device_label` | `auto` | `auto`, `ac` or `mat` — wording of status/labels |
+| `t_min` / `t_max` | `19` / `26` | Cold / hot thresholds [°C] |
+| `h_min` / `h_max` | `30` / `60` | Dry / humid thresholds [%] |
+| `co2_max` | `1200` | CO₂ threshold [ppm] |
+| `pm25_max` | `25` | PM2.5 threshold [µg/m³] |
+| `hours_to_show` | `24` | Graph range [h] |
+| `px_per_degree` | `12` | Maximum graph height for 1 °C — keeps amplitudes comparable between tiles |
+| `graph_style` | `color` | `color` (temperature thresholds) or `mono` |
+| `graph_color` | `#00e5ff` | Line colour in `mono` style |
 
 ## Visually compatible cards
 
@@ -957,41 +1046,6 @@ card_mod:
       --secondary-text-color: #9a9a9a;
     }
 ```
-
-## Avionics Climate
-
-![Avionics Climate](docs/climate.png)
-
-Room tile with a background temperature graph, comfort indicator and one-tap control
-of an air conditioner or heating mat. Fully configurable in the visual editor.
-
-```yaml
-type: custom:avionics-climate-card
-name: Living room
-temperature_entity: sensor.living_room_temperature
-humidity_entity: sensor.living_room_humidity
-climate_entity: climate.living_room
-co2_entity: sensor.living_room_co2        # optional
-pm25_entity: sensor.living_room_pm25      # optional
-```
-
-| Option | Default | Description |
-|---|---|---|
-| `name` | — | Tile title |
-| `mode` | `room` | `room` or `outdoor` (reference tile: MIN/MAX of the last 24 h instead of unit/set point) |
-| `temperature_entity` | — | Temperature sensor. If missing or unavailable, `current_temperature` of the climate entity is used |
-| `humidity_entity` | — | Humidity sensor |
-| `climate_entity` | — | Climate entity; tap toggles it, hold opens more-info |
-| `co2_entity`, `pm25_entity` | — | Optional air quality sensors |
-| `device_label` | `auto` | `auto`, `ac` or `mat` — wording of status/labels |
-| `t_min` / `t_max` | `19` / `26` | Cold / hot thresholds [°C] |
-| `h_min` / `h_max` | `30` / `60` | Dry / humid thresholds [%] |
-| `co2_max` | `1200` | CO₂ threshold [ppm] |
-| `pm25_max` | `25` | PM2.5 threshold [µg/m³] |
-| `hours_to_show` | `24` | Graph range [h] |
-| `px_per_degree` | `12` | Maximum graph height for 1 °C — keeps amplitudes comparable between tiles |
-| `graph_style` | `color` | `color` (temperature thresholds) or `mono` |
-| `graph_color` | `#00e5ff` | Line colour in `mono` style |
 
 ## Theme, headers and the grid
 
@@ -1097,3 +1151,7 @@ Releases are built by GitHub Actions when a `vX.Y.Z` tag matching `package.json`
 ## License
 
 MIT
+
+Avionics Cards is an independent project, not affiliated with or endorsed by Garmin. Garmin, G1000 and
+G3000 are trademarks of their respective owners; they are mentioned only to describe the design
+inspiration.

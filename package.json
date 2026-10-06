@@ -1,6 +1,6 @@
 {
   "name": "avionics-cards",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Glass-cockpit inspired dashboard cards for Home Assistant",
   "private": true,
   "type": "module",

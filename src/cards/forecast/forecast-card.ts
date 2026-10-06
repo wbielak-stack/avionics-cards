@@ -467,7 +467,8 @@ export class AvionicsForecastCard extends LitElement {
         height: calc(var(--s, 1) * 52px);
         margin-top: calc(var(--s, 1) * 6px);
       }
-      .area svg {
+      /* tylko wykresy wypelniajace wiersz - nie strzalki wiatru w komorkach */
+      .area > svg {
         position: absolute;
         inset: 0;
         width: 100%;
