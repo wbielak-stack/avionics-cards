@@ -1,4 +1,5 @@
 import { LitElement, html, nothing, css, type TemplateResult } from 'lit';
+import { resolveZones, inverseWanted, levelStyle } from '../../core/zone-extras';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant } from '../../types';
@@ -97,8 +98,8 @@ export class AvionicsTankCard extends LitElement {
   }
 
   protected render(): TemplateResult | typeof nothing {
-    const c = this._config;
-    if (!c || !this._hass) return nothing;
+    if (!this._config || !this._hass) return nothing;
+    const c = resolveZones(this._hass, this._config);
     const t = (k: string) => localize(getLanguage(this._hass), k);
     if (!c.entity) return html`<ha-card><div class="err">${t('eis.choose_entity')}</div></ha-card>`;
     const soc = this._n(c.entity);
@@ -155,7 +156,7 @@ export class AvionicsTankCard extends LitElement {
       dir > 0 && c.status_positive
         ? html`<span style="color:var(--av-ok)">▲ ${c.status_positive} ${absP.toFixed(2).replace('.', ',')} ${c.power_unit}</span>`
         : dir < 0 && c.status_negative
-          ? html`<span style="color:var(--av-caution)">▼ ${c.status_negative} ${absP.toFixed(2).replace('.', ',')} ${c.power_unit}</span>`
+          ? html`<span style="color:var(--av-value)">▼ ${c.status_negative} ${absP.toFixed(2).replace('.', ',')} ${c.power_unit}</span>`
           : Number.isFinite(power) && (c.status_positive || c.status_negative)
             ? html`<span style="color:var(--av-dim)">—</span>`
             : nothing;
@@ -163,7 +164,8 @@ export class AvionicsTankCard extends LitElement {
     const d = c.precision ?? 1;
     const txt = Number.isFinite(soc) ? soc.toFixed(d) : '--';
     const [ip, dp] = txt.split('.');
-    const big = html`<div class="big" style="color:${lvl}">
+    const warn = lvl === 'var(--av-warning)';
+    const big = html`<div class="big" style=${levelStyle(lvl, warn, inverseWanted(this, (c as any).warning_inverse))}>
       <span class="ip">${ip}</span>${dp ? html`<span class="dp">,${dp}</span>` : nothing}<span class="pc">%</span>
     </div>`;
     const stats = html`<div class="stats">

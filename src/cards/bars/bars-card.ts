@@ -1,4 +1,5 @@
 import { LitElement, html, svg, nothing, css, type TemplateResult } from 'lit';
+import { resolveZones, inverseWanted, levelStyle } from '../../core/zone-extras';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant } from '../../types';
@@ -145,7 +146,7 @@ export class AvionicsBarsCard extends LitElement {
       Number.isFinite(good) &&
       ((c.good_direction === 'above' && v > good) || (c.good_direction === 'below' && v < good));
     const color = (v: number) => {
-      const l = levelOf(v, c as EisRowConfig);
+      const l = levelOf(v, resolveZones(this._hass, c) as EisRowConfig);
       if (l === 'warning') return 'var(--av-warning)';
       if (l === 'caution') return 'var(--av-caution)';
       return isGood(v) ? 'var(--av-ok)' : 'var(--av-bar)';

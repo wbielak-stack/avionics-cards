@@ -48,9 +48,15 @@ export abstract class RowListEditor<R extends RowBase> extends LitElement {
 
   private _label = (s: { name: string }) => this.t(`${this.labelPrefix}${s.name}`);
 
+  /** Konfiguracja zapisywana do YAML (podklasa moze np. przemianowac `entities`). */
+  protected toCardConfig(config: RowListConfig<R>): object {
+    return config;
+  }
+
   private _emit(config: RowListConfig<R>): void {
     this._config = config;
-    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config }, bubbles: true, composed: true }));
+    const out = this.toCardConfig(config);
+    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: out }, bubbles: true, composed: true }));
   }
 
   private _cardChanged(e: CustomEvent): void {
@@ -187,13 +193,18 @@ export const numberSel = (step = 0.1) => ({ number: { step, mode: 'box' } });
  * Pola stref w stalym ukladzie: lewa kolumna = ponizej, prawa = powyzej;
  * gorny wiersz = ostrzezenia, dolny = alarmy.
  */
-export const zoneFields = () => [
-  schemaGrid([
-    { name: 'caution_low', selector: numberSel() },
-    { name: 'caution_high', selector: numberSel() },
-  ]),
-  schemaGrid([
-    { name: 'warning_low', selector: numberSel() },
-    { name: 'warning_high', selector: numberSel() },
-  ]),
-];
+export const zoneFields = (fromEntities = false) => {
+  // progi z encji: te same klucze, wybor encji zamiast liczby
+  const sel = fromEntities ? { entity: { domain: ['input_number', 'number', 'sensor'] } } : numberSel();
+  return [
+    { name: 'zones_from_entities', selector: { boolean: {} } },
+    schemaGrid([
+      { name: 'caution_low', selector: sel },
+      { name: 'caution_high', selector: sel },
+    ]),
+    schemaGrid([
+      { name: 'warning_low', selector: sel },
+      { name: 'warning_high', selector: sel },
+    ]),
+  ];
+};

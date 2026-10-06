@@ -6,12 +6,13 @@ import {
   numberSel as n,
   zoneFields,
 } from '../../core/row-list-editor';
+import { resolveZones } from '../../core/zone-extras';
 import { zonesSummary } from '../../core/zones-summary';
 
 /** Edytor karty EIS: grupy pol pokazywane tylko wtedy, gdy maja sens. */
 export class AvionicsEisCardEditor extends RowListEditor<EisRowConfig> {
   protected rowNotes(row: EisRowConfig) {
-    const { summary, orderError } = zonesSummary(row, (k) => this.t(k));
+    const { summary, orderError } = zonesSummary(resolveZones(this.hass, row as any), (k) => this.t(k));
     if (orderError) return [{ type: 'warning' as const, text: this.t('zones.order_error') }];
     return summary ? [{ type: 'info' as const, text: summary }] : [];
   }
@@ -19,7 +20,10 @@ export class AvionicsEisCardEditor extends RowListEditor<EisRowConfig> {
   protected labelPrefix = 'eis.editor.';
 
   protected cardSchema() {
-    return [{ name: 'title', selector: { text: {} } }];
+    return [
+      { name: 'title', selector: { text: {} } },
+      { name: 'warning_inverse', selector: { boolean: {} } },
+    ];
   }
 
   protected rowFormDefaults(): Partial<EisRowConfig> {
@@ -73,7 +77,7 @@ export class AvionicsEisCardEditor extends RowListEditor<EisRowConfig> {
             ]
           : []),
       ]),
-      section('eis.editor.section.zones', zoneFields()),
+      section('eis.editor.section.zones', zoneFields(!!(row as any).zones_from_entities)),
     ];
     if (showBar) {
       schema.push(

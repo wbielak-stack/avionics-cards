@@ -28,6 +28,9 @@ forecasts, amber for cautions and red for warnings.
 | Avionics METAR | `custom:avionics-metar-card` | METAR for an airport: flight category, raw report, decoded fields |
 | Avionics Astro | `custom:avionics-astro-card` | Sun and moon: day profile, twilight, day length, moon phase |
 | Avionics Tank | `custom:avionics-tank-card` | Level like a fuel gauge: battery SoC, water, pellets |
+| Avionics Cylinders | `custom:avionics-cylinder-card` | Similar values side by side like the LEAN page: cells, rooms, phases |
+| Avionics Synoptic | `custom:avionics-synoptic-card` | Electrical synoptic: DC bus, inverter, AC bus, grid contactor |
+| Avionics Frame | `custom:avionics-frame-card` | The avionics header and frame around any card |
 | Avionics Climate | `custom:avionics-climate-card` | Room tile with background graph and climate / heating-mat control |
 
 ## Installation
@@ -810,6 +813,151 @@ endurance_attribute: autonomy_nopv_h
 | `target_entity` / `target`, `target_active_entity`, `target2_entity`, `target2_active_entity` | — | Target shown while its active entity is `on` |
 | `endurance_entity`, `endurance_attribute`, `caution_hours`, `warning_hours` | —, —, `6`, `3` | ENDUR source and thresholds |
 
+## Avionics Cylinders
+
+Similar values side by side, like the cylinder bars on the G1000 LEAN page: battery cells or
+modules, room temperatures, inverter phases, PV strings. A common scale (zoomed to the data when
+`min` / `max` are not set — cell voltages differ by millivolts), shared zones, an optional red limit
+line, the lowest / highest element highlighted in cyan, an optional marker of the maximum or minimum
+since midnight above each bar, and a header with MIN, MAX and Δ, average or sum. With many bars only
+the highlighted value is shown under them.
+
+```yaml
+type: custom:avionics-cylinder-card
+title: Battery · modules
+entities: [sensor.module_1_min, sensor.module_2_min, sensor.module_3_min]
+labels: 1, 2, 3
+precision: 3
+highlight: min
+delta_multiplier: 1000   # Δ in mV
+delta_unit: mV
+warning_low: 3.0
+caution_low: 3.2
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `entities`, `labels` | — | One bar per entity; short labels, comma separated (or `name` per entity) |
+| `unit`, `precision`, `multiplier` | — | Display |
+| `highlight` | `min` | `min`, `max`, `both` or `none` |
+| `peak` | `off` | `max` / `min` since midnight as a hollow marker |
+| `summary`, `delta_multiplier`, `delta_unit`, `delta_precision` | `delta` | Third header field: `delta`, `avg` or `sum` |
+| `show_values` | `auto` | `auto` (when they fit), `all`, `highlighted` |
+| `min`, `max`, `limit` | — | Scale and red limit line |
+| zones, `zones_from_entities`, `warning_inverse` | — | As in the other cards |
+
+## Avionics Synoptic
+
+An electrical synoptic like the system pages of the G3000: a **DC bus** (PV strings, battery), the
+**inverter** as its own block (AC power, temperature, conversion loss), an **AC bus** (house, grid,
+EV) and the grid connected through a **contactor**. Energised lines are green with a direction arrow
+and get thicker with power; lines without flow are grey and dashed. Battery charging is green,
+discharging white (normal operation, not a caution). When the grid is gone the contactor opens, the grid box is crossed out in red,
+the inverter is marked **EPS** and, if configured, the endurance appears below.
+
+Each node has a kind (`source`, `storage`, `load`, `grid`) and a bus (`dc` or `ac`), so the same
+card describes a hybrid inverter (battery on DC), an AC-coupled battery, micro-inverters (PV on AC)
+or a system without a battery. Visual editor (list of nodes) or YAML.
+
+```yaml
+type: custom:avionics-synoptic-card
+title: Electrical
+inverter:
+  model: Hybrid · DC/AC
+  entity: sensor.inverter_ac_power      # + DC -> AC
+  multiplier: 0.001
+  temp_entity: sensor.inverter_temperature
+endurance_entity: sensor.battery_forecast
+endurance_attribute: autonomy_nopv_h
+nodes:
+  - { name: PV1, kind: source, entity: sensor.pv1_power, multiplier: 0.001 }
+  - { name: PV2, kind: source, entity: sensor.pv2_power, multiplier: 0.001 }
+  - { name: BATTERY, kind: storage, entity: sensor.battery_power, multiplier: 0.001, soc_entity: sensor.battery_soc }
+  - { name: GRID, kind: grid, entity: sensor.grid_power, multiplier: 0.001, connected_entity: binary_sensor.grid_available }
+  - { name: HOUSE, kind: load, entity: sensor.house_power, multiplier: 0.001 }
+  - { name: EV, kind: load, entity: sensor.ev_charger_power, multiplier: 0.001, available_entity: binary_sensor.ev_connected }
+```
+
+| Node option | Description |
+|---|---|
+| `name`, `kind`, `bus` | Label; `source` / `storage` / `load` / `grid`; `dc` / `ac` (default: with an inverter sources and storage on DC, the rest on AC) |
+| `entity`, `multiplier`, `invert` | Power with sign: + production / charging / consumption / import; `invert` flips it |
+| `entity_negative` | Separate entity for the other direction when the integration splits it (grid: export, storage: discharge) — power = `entity` − `entity_negative` |
+| `soc_entity` | Storage: state of charge |
+| `available_entity` | Load: `off` / `unavailable` = disconnected |
+| `connected_entity`, `connected_state` | Grid: present when the entity is in this state (default `on`) |
+
+Node options for sources and storage: `voltage_entity`, `current_entity` — a small line under the value
+(e.g. PV string voltage and current).
+
+Card options: `inverter` (`name`, `model`, `entity`, `multiplier`, `temp_entity`, `status_entity`,
+`efficiency_entity`), `pv_power_entity` / `pv_energy_entity` (PV total above the DC bus),
+`dc_voltage_entity` / `dc_current_entity` / `dc_power_entity` (under the DC bus), `ac_voltage_entities` /
+`ac_current_entities` / `ac_power_entities` (phases L1–L3 under the AC bus; powers converted from W or
+kW to the card unit), `unit` (`kW`),
+`deadband`, `status_positive` / `status_negative`, `endurance_entity` / `endurance_attribute`.
+
+## Avionics Frame
+
+The avionics header and frame around **any** card — e.g. Sankey Chart, an entities card or a history
+graph — so it looks like the rest of the set without card-mod. The inner card's own background,
+border and shadow are switched off with theme variables; remove its own title and put the title in
+the frame. The inner card is edited as YAML in the frame's editor.
+
+```yaml
+type: custom:avionics-frame-card
+title: Power flow
+card:
+  type: custom:sankey-chart
+  sections: [...]
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `title` | — | Header |
+| `card` | — | The card inside |
+| `padding` | `false` | Inner margin around the card |
+
+## Visually compatible cards
+
+### Sankey Chart
+
+[Sankey Chart](https://github.com/MindFreeze/ha-sankey-chart) shows *where* the energy goes, which
+complements the synoptic (*how* it flows right now). It has a colour per box, and the frame,
+background and font can be set with [card-mod](https://github.com/thomasloven/lovelace-card-mod).
+
+**Energy palette.** In a Sankey the colour carries the *energy carrier*, not a state, so it is a
+deliberate exception to the avionics colours: one colour per source, the same in both directions.
+PV pure yellow `#ffe600` (clearly different from the caution amber), battery green `#00e676` (charge
+and discharge), grid in the supplier's colour (e.g. `#e2007a`, import and export), house
+consumption white, individual loads grey:
+
+```yaml
+type: custom:sankey-chart
+show_names: true
+sections:
+  - entities:
+      - { entity_id: sensor.grid_import, color: "#e2007a", children: [sensor.house_power, sensor.battery_charge] }
+      - { entity_id: sensor.pv1_power, color: "#ffe600", children: [sensor.house_power, sensor.grid_export, sensor.battery_charge] }
+      - { entity_id: sensor.battery_discharge, color: "#00e676", children: [sensor.house_power, sensor.grid_export] }
+  - entities:
+      - { entity_id: sensor.house_power, color: "#ffffff", children: [sensor.fridge_power, sensor.computer_power] }
+      - { entity_id: sensor.grid_export, color: "#e2007a" }
+      - { entity_id: sensor.battery_charge, color: "#00e676" }
+  - entities: [sensor.fridge_power, sensor.computer_power]
+card_mod:
+  style: |
+    ha-card {
+      background: #000;
+      border: 1.5px solid #8c8c8c;
+      border-radius: 0;
+      font-family: var(--avionics-font-family, 'Roboto Condensed', 'Arial Narrow', sans-serif);
+      --primary-color: #5a5a5a;
+      --primary-text-color: #ffffff;
+      --secondary-text-color: #9a9a9a;
+    }
+```
+
 ## Avionics Climate
 
 ![Avionics Climate](docs/climate.png)
@@ -844,6 +992,60 @@ pm25_entity: sensor.living_room_pm25      # optional
 | `px_per_degree` | `12` | Maximum graph height for 1 °C — keeps amplitudes comparable between tiles |
 | `graph_style` | `color` | `color` (temperature thresholds) or `mono` |
 | `graph_color` | `#00e5ff` | Line colour in `mono` style |
+
+## Theme, headers and the grid
+
+**One header everywhere.** Every card with a title uses the same header, like a window title on the
+G1000: centred, cyan, upper case, a line underneath; extra items (radar time, forecast range
+buttons, METAR category and age) sit on the left / right of the same line. Tiles without a title
+(Value, Tank, Graph, Bars, Climate) keep their label inside the tile, like an instrument caption.
+
+**Theme.** [`themes/avionics.yaml`](themes/avionics.yaml) contains two dark themes: **Avionics**
+(muted — near-black backgrounds, off-white text, slightly softened signal colours with the same
+meaning; for everyday viewing on a monitor) and **Avionics Contrast** (pure cockpit black, white and
+saturated colours; for a wallboard or low light). Both define the dark mode, so Home Assistant's own
+dark palette is used for forms, lists and dialogs, and the accent (badges) is amber with black text.
+They make *all* cards on the dashboard
+consistent — including other cards (Sankey, entities, tiles): black cards with a grey frame, square
+corners, condensed font, cyan headers. The avionics cards read the same theme (`avionics-title-color`,
+`avionics-title-size`, `avionics-font-family`, `avionics-warning-inverse`). Standard theme
+variables change colour, size and font of other cards' headers but not their alignment — an
+optional [card-mod](https://github.com/thomasloven/lovelace-card-mod) block in the theme centres them
+and adds the line; without card-mod it is ignored.
+
+```yaml
+# configuration.yaml
+frontend:
+  themes: !include_dir_merge_named themes
+  extra_module_url:                       # only for the card-mod part (other cards' headers)
+    - /hacsfiles/lovelace-card-mod/card-mod.js
+```
+
+Select the theme in the profile with the **dark** mode. The card-mod part of a theme only works when
+card-mod is loaded as a frontend module (`extra_module_url`), not only as a dashboard resource.
+
+**Grid.** In a sections view the cards follow the grid (56 px rows, 8 px gap): with `rows: auto`
+the card height is rounded up to the next grid line, so bottom edges line up with the neighbours;
+with a fixed number of rows the card fills it and charts (Cylinders, Astro profile, Graph, Bars)
+stretch into the free space. Outside a sections view nothing changes.
+
+## Zones: thresholds from entities, inverse warnings
+
+Every card with zones (EIS, List, Value, Dial, Bars, Tank, Cylinders) accepts either a number or an
+entity in the same threshold keys — e.g. a comfort range kept in `input_number` helpers, different
+at night. In the editor, the **Thresholds from entities** switch turns the four number fields into
+entity pickers; the zone summary under the form uses the current entity values.
+
+```yaml
+caution_high: input_number.comfort_max
+warning_high: input_number.alarm_max
+```
+
+**Warning values in inverse** (`warning_inverse: true`, off by default) shows values in the warning
+zone as white on red, like an exceeded limit on the G1000. It is static — the G1000 also flashes it
+until the pilot acknowledges, which only makes sense together with an alert system that can be
+acknowledged. To turn it on for all cards at once, set the theme variable
+`avionics-warning-inverse: "on"`.
 
 ## Grid
 

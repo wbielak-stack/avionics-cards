@@ -1,4 +1,5 @@
 import { LitElement, html, nothing, css, type TemplateResult } from 'lit';
+import { resolveZones, inverseWanted, levelStyle } from '../../core/zone-extras';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant } from '../../types';
@@ -137,7 +138,8 @@ export class AvionicsValueCard extends LitElement {
     const v = this._value();
     const failed = !Number.isFinite(v);
     const shown = c.abs_value ? Math.abs(v) : v;
-    const lvl = levelOf(shown, c);
+    const lvl = levelOf(shown, resolveZones(this._hass, c));
+    const inv = inverseWanted(this, (c as any).warning_inverse);
     const unit = c.unit ?? ent?.attributes?.unit_of_measurement ?? '';
 
     return html`
@@ -150,7 +152,7 @@ export class AvionicsValueCard extends LitElement {
           <div class="name">${c.name ?? ent?.attributes?.friendly_name ?? ''}</div>
           <div class="status">${failed ? nothing : this._renderStatus(v)}</div>
           <div class=${classMap({ value: true, na: failed })}>
-            <span class="v" style="color:${failed ? 'var(--av-dim)' : LEVEL_COLOR[lvl]}"
+            <span class="v" style=${failed ? 'color:var(--av-dim)' : levelStyle(LEVEL_COLOR[lvl], lvl === 'warning', inv)}
               >${this._fmt(shown, this._digits(), c.show_sign)}</span
             >${unit ? html`<span class="u">${unit}</span>` : nothing}
           </div>
@@ -169,7 +171,7 @@ export class AvionicsValueCard extends LitElement {
       return html`<span style="color:var(--av-ok)">▲ ${c.status_positive}</span>`;
     }
     if (v < -db && c.status_negative) {
-      return html`<span style="color:var(--av-caution)">▼ ${c.status_negative}</span>`;
+      return html`<span style="color:var(--av-value)">▼ ${c.status_negative}</span>`;
     }
     return html`<span style="color:var(--av-status)">${c.status_zero ?? '—'}</span>`;
   }

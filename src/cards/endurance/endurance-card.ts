@@ -1,4 +1,5 @@
 import { LitElement, html, nothing, css, type TemplateResult } from 'lit';
+import { cardHeader } from '../../core/header';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant } from '../../types';
@@ -135,7 +136,7 @@ export class AvionicsEnduranceCard extends LitElement {
         class=${classMap({ 'true-style': this._styleMode === 'true' })}
         @click=${() => fireMoreInfo(this, c.entity!)}
       >
-        ${c.name ? html`<div class="title">${c.name}</div>` : nothing}
+        ${cardHeader(c.name)}
         <div class="scen">
           <div class="box">
             <div class="blbl">${c.label_nopv ?? t('endur.nopv')}</div>

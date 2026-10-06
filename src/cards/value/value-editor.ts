@@ -1,5 +1,6 @@
 import { FormEditor } from '../../core/form-editor';
 import { schemaGrid as grid, schemaSection, numberSel as n, zoneFields } from '../../core/row-list-editor';
+import { resolveZones } from '../../core/zone-extras';
 import { zonesSummary } from '../../core/zones-summary';
 import type { ValueCardConfig } from './config';
 import { gridSchema } from '../../core/grid';
@@ -12,7 +13,7 @@ export class AvionicsValueCardEditor extends FormEditor<ValueCardConfig & Record
   }
 
   protected notes(c: ValueCardConfig) {
-    const { summary, orderError } = zonesSummary(c, (k) => this.t(k));
+    const { summary, orderError } = zonesSummary(resolveZones(this.hass, c as any), (k) => this.t(k));
     if (orderError) return [{ type: 'warning' as const, text: this.t('zones.order_error') }];
     return summary ? [{ type: 'info' as const, text: summary }] : [];
   }
@@ -54,7 +55,7 @@ export class AvionicsValueCardEditor extends FormEditor<ValueCardConfig & Record
             ]
           : []),
       ]),
-      section('eis.editor.section.zones', zoneFields()),
+      section('eis.editor.section.zones', [...zoneFields(!!(c as any).zones_from_entities), { name: 'warning_inverse', selector: { boolean: {} } }]),
       section('value.editor.section.graph', [
         { name: 'show_graph', selector: { boolean: {} } },
         ...(c.show_graph !== false

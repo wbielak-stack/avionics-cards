@@ -1,4 +1,5 @@
 import { LitElement, html, svg, nothing, css, type TemplateResult } from 'lit';
+import { cardHeader } from '../../core/header';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant } from '../../types';
@@ -157,7 +158,7 @@ export class AvionicsWeatherCard extends LitElement {
 
     return html`
       <ha-card class=${classMap({ 'true-style': this._styleMode === 'true' })}>
-        ${c.name ? html`<div class="title">${c.name}</div>` : nothing}
+        ${cardHeader(c.name)}
         ${boxes
           ? html`<div
               class=${classMap({ boxes: true, autocols: autoCols })}

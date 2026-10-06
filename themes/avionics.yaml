@@ -1,0 +1,105 @@
+# Avionics - motywy Home Assistant dla zestawu avionics-cards (i pozostalych kart).
+#   Avionics          - stonowany, do codziennego ogladania na monitorze (domyslny)
+#   Avionics Contrast - czysto kokpitowy: czern, biel, nasycone kolory (wallboard, slabe swiatlo)
+# Instalacja: plik do /config/themes/, w configuration.yaml:
+#   frontend:
+#     themes: !include_dir_merge_named themes
+#     extra_module_url:                                  # tylko dla czesci card-mod (naglowki innych kart)
+#       - /hacsfiles/lovelace-card-mod/card-mod.js
+# Potem: Profil -> Motyw -> Avionics, tryb: Ciemny.
+
+Avionics:
+  card-mod-theme: Avionics
+  card-mod-card: &header |
+    .card-header {
+      text-align: center;
+      justify-content: center;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      line-height: 1.2;
+      padding: 10px 0 6px;
+      margin: 0 14px 8px;
+      border-bottom: 1px solid var(--avionics-frame-color);
+    }
+  modes:
+    dark:
+      # --- tla: prawie czarne, nie czarne ---
+      primary-background-color: "#16181b"
+      secondary-background-color: "#1d2024"
+      lovelace-background: "#16181b"
+      card-background-color: "#0d0f11"
+      ha-card-background: "#0d0f11"
+      ha-card-border-color: "#4e555d"
+      ha-card-border-width: "1px"
+      ha-card-border-radius: "0px"
+      ha-card-box-shadow: "none"
+      divider-color: "#2c3136"
+      # --- tekst: zlamana biel ---
+      primary-font-family: "'Roboto Condensed', 'Arial Narrow', sans-serif"
+      primary-text-color: "#e4e6e8"
+      secondary-text-color: "#9aa1a8"
+      disabled-text-color: "#5c636a"
+      # --- kolory interfejsu: cyjan glowny, bursztyn akcent (plakietki, uwaga) ---
+      primary-color: "#2ec5d6"
+      accent-color: "#e8a317"
+      text-primary-color: "#0d0f11"
+      text-accent-color: "#0d0f11"
+      state-icon-color: "#9aa1a8"
+      # --- naglowki kart ---
+      ha-card-header-color: "#2ec5d6"
+      ha-card-header-font-size: "15px"
+      ha-card-header-font-family: "'Roboto Condensed', 'Arial Narrow', sans-serif"
+      # --- avionics-cards (te same znaczenia kolorow, przygaszone) ---
+      avionics-background: "#0d0f11"
+      avionics-frame-color: "#4e555d"
+      avionics-frame-width: "1px"
+      avionics-value-color: "#e4e6e8"
+      avionics-label-color: "#2ec5d6"
+      avionics-unit-color: "#2ec5d6"
+      avionics-setpoint-color: "#2ec5d6"
+      avionics-forecast-color: "#d63fd6"
+      avionics-ok-color: "#2fcf78"
+      avionics-caution-color: "#e8a317"
+      avionics-warning-color: "#e5484d"
+      avionics-dim-color: "#8a9198"
+      avionics-status-color: "#b9bec3"
+      avionics-font-family: "'Roboto Condensed', 'Arial Narrow', sans-serif"
+      avionics-title-color: "#2ec5d6"
+      avionics-title-size: "15px"
+      # wartosci w alarmie w inwersji we wszystkich kartach naraz: "on"
+      avionics-warning-inverse: "off"
+
+Avionics Contrast:
+  card-mod-theme: Avionics Contrast
+  card-mod-card: *header
+  modes:
+    dark:
+      primary-background-color: "#111111"
+      secondary-background-color: "#1a1a1a"
+      lovelace-background: "#111111"
+      card-background-color: "#000000"
+      ha-card-background: "#000000"
+      ha-card-border-color: "#8c8c8c"
+      ha-card-border-width: "1.5px"
+      ha-card-border-radius: "0px"
+      ha-card-box-shadow: "none"
+      divider-color: "#3a3a3a"
+      primary-font-family: "'Roboto Condensed', 'Arial Narrow', sans-serif"
+      primary-text-color: "#ffffff"
+      secondary-text-color: "#9a9a9a"
+      disabled-text-color: "#5a5a5a"
+      primary-color: "#00e5ff"
+      accent-color: "#ffb300"
+      text-primary-color: "#000000"
+      text-accent-color: "#000000"
+      state-icon-color: "#9a9a9a"
+      ha-card-header-color: "#00e5ff"
+      ha-card-header-font-size: "15px"
+      ha-card-header-font-family: "'Roboto Condensed', 'Arial Narrow', sans-serif"
+      avionics-frame-color: "#8c8c8c"
+      avionics-frame-width: "1.5px"
+      avionics-font-family: "'Roboto Condensed', 'Arial Narrow', sans-serif"
+      avionics-title-color: "#00e5ff"
+      avionics-title-size: "15px"
+      avionics-warning-inverse: "off"

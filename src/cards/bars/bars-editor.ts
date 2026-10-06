@@ -1,5 +1,6 @@
 import { FormEditor } from '../../core/form-editor';
 import { schemaGrid as grid, schemaSection, numberSel as n, zoneFields } from '../../core/row-list-editor';
+import { resolveZones } from '../../core/zone-extras';
 import { zonesSummary } from '../../core/zones-summary';
 import { type BarsCardConfig, parseHoursDetailed } from './config';
 import { gridSchema } from '../../core/grid';
@@ -37,7 +38,7 @@ export class AvionicsBarsCardEditor extends FormEditor<BarsCardConfig & Record<s
     }
     const { invalid } = parseHoursDetailed(c.band_hours);
     if (invalid.length) out.push({ type: 'warning', text: `${this.t('bars.band_invalid')} ${invalid.join(', ')}` });
-    const { summary, orderError } = zonesSummary(c, (k) => this.t(k));
+    const { summary, orderError } = zonesSummary(resolveZones(this.hass, c as any), (k) => this.t(k));
     if (orderError) out.push({ type: 'warning', text: this.t('zones.order_error') });
     else if (summary) out.push({ type: 'info', text: summary });
     return out;
@@ -117,7 +118,7 @@ export class AvionicsBarsCardEditor extends FormEditor<BarsCardConfig & Record<s
           : []),
       ]),
       section('bars.editor.section.band', [{ name: 'band_hours', selector: { text: {} } }]),
-      section('eis.editor.section.zones', zoneFields()),
+      section('eis.editor.section.zones', zoneFields(!!(c as any).zones_from_entities)),
     ];
   }
 }

@@ -1,4 +1,5 @@
 import { LitElement, html, svg, nothing, css, type TemplateResult } from 'lit';
+import { cardHeader } from '../../core/header';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant } from '../../types';
@@ -112,7 +113,7 @@ export class AvionicsAstroCard extends LitElement {
     const sy = sunTimes(new Date(noonish.valueOf() - DAY), lat, lon);
     return html`
       <ha-card class=${classMap({ 'true-style': this._styleMode === 'true' })}>
-        <div class="title">${c.title ?? t('astro.title')}</div>
+        ${cardHeader(c.title ?? t('astro.title'))}
         ${c.show_profile !== false ? this._profile(midnight, now, lat, lon, st, t) : nothing}
         <div class="boxes">
           ${c.show_sun !== false ? this._sunBox(now, lat, lon, st, sy, t) : nothing}
@@ -249,6 +250,8 @@ export class AvionicsAstroCard extends LitElement {
     css`
       ha-card {
         padding: 10px 14px 10px;
+        display: flex;
+        flex-direction: column;
       }
       .err {
         color: var(--av-dim);
@@ -261,9 +264,11 @@ export class AvionicsAstroCard extends LitElement {
         text-transform: uppercase;
         margin-bottom: 6px;
       }
+      /* profil wypelnia wolna wysokosc przy stalej liczbie wierszy */
       .profile {
         position: relative;
-        height: 130px;
+        flex: 1 1 auto;
+        min-height: 130px;
         margin: 4px 0 18px;
       }
       .profile svg {

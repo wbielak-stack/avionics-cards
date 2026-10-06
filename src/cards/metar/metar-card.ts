@@ -1,4 +1,5 @@
 import { LitElement, html, nothing, css, type TemplateResult } from 'lit';
+import { cardHeader } from '../../core/header';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant } from '../../types';
@@ -114,11 +115,11 @@ export class AvionicsMetarCard extends LitElement {
     const station = m?.station ?? c.station?.toUpperCase() ?? '';
     return html`
       <ha-card class=${classMap({ 'true-style': this._styleMode === 'true' })}>
-        <div class="top">
-          <span class="title">METAR ${station}</span>
-          ${cat ? html`<span class="cat" style="color:${CAT_COLOR[cat]};border-color:${CAT_COLOR[cat]}">${cat}</span>` : nothing}
-          <span class="age">${m?.time ? this._age(m.time, t) : ''}</span>
-        </div>
+        ${cardHeader(
+          `METAR ${station}`,
+          html`<span class="age">${m?.time ? this._age(m.time, t) : ''}</span>`,
+          cat ? html`<span class="cat" style="color:${CAT_COLOR[cat]};border-color:${CAT_COLOR[cat]}">${cat}</span>` : nothing,
+        )}
         ${!m
           ? html`<div class="err">
               ${this._error ? `${t('metar.error')}: ${this._error}` : t('metar.loading')}

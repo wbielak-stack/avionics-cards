@@ -1,4 +1,5 @@
 import { LitElement, html, svg, nothing, css, type TemplateResult, type PropertyValues } from 'lit';
+import { cardHeader } from '../../core/header';
 import { state, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant } from '../../types';
@@ -398,10 +399,7 @@ export class AvionicsRadarCard extends LitElement {
 
     return html`
       <ha-card class=${classMap({ 'true-style': this._styleMode === 'true' })}>
-        <div class="top">
-          <span class="title">${c.title ?? t('radar.title')}</span>
-          <span class="when">${frame ? this._time(frame) : ''}</span>
-        </div>
+        <div class="hpad">${cardHeader(c.title ?? t('radar.title'), html`<span class="when">${frame ? this._time(frame) : ''}</span>`)}</div>
         <div
           class="map"
           style="height:${H}px"
@@ -640,6 +638,14 @@ export class AvionicsRadarCard extends LitElement {
         justify-content: space-between;
         align-items: baseline;
         padding: 0 14px 6px;
+      }
+      .hpad {
+        padding: 0 14px;
+      }
+      /* krawedz mapy pelni role kreski naglowka */
+      .hpad .av-head {
+        border-bottom: none;
+        margin-bottom: 4px;
       }
       .title {
         color: var(--av-label);

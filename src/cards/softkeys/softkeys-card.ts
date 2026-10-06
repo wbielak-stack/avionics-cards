@@ -1,4 +1,5 @@
 import { LitElement, html, nothing, css, type TemplateResult } from 'lit';
+import { cardHeader } from '../../core/header';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant } from '../../types';
@@ -193,7 +194,7 @@ export class AvionicsSoftkeysCard extends LitElement {
     const row = c.layout === 'row';
     return html`
       <ha-card class=${classMap({ 'true-style': this._styleMode === 'true' })}>
-        ${c.title ? html`<div class="title">${c.title}</div>` : nothing}
+        ${cardHeader(c.title)}
         <div class="keys ${row ? 'row' : 'list'} ${c.key_style === 'inverse' ? 'st-inverse' : 'st-lamp'}">
           ${this._keys.map((k, i) => this._renderKey(k, i, row, c.key_style === 'inverse'))}
         </div>

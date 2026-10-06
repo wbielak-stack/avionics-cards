@@ -1,4 +1,6 @@
 import { LitElement, html, svg, nothing, css, type TemplateResult } from 'lit';
+import { cardHeader } from '../../core/header';
+import { resolveZones, inverseWanted, levelStyle } from '../../core/zone-extras';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -188,7 +190,7 @@ export class AvionicsEisCard extends LitElement {
     const c = this._config;
     return html`
       <ha-card class=${classMap({ 'true-style': this._styleMode === 'true' })}>
-        ${c.title ? html`<div class="title">${c.title}</div>` : nothing}
+        ${cardHeader(c.title)}
         ${this._rows.map((r) => this._renderRow(r))}
       </ha-card>
     `;
@@ -213,15 +215,16 @@ export class AvionicsEisCard extends LitElement {
 
     // kolor liczby: gorszy ze stanow obu wartosci
     const rank: Record<Level, number> = { none: 0, ok: 1, caution: 2, warning: 3 };
-    const levels: Level[] = [levelOf(v, r)];
-    if (r.entity2) levels.push(levelOf(v2, r));
+    const rz = resolveZones(this._hass, r);
+    const levels: Level[] = [levelOf(v, rz)];
+    if (r.entity2) levels.push(levelOf(v2, rz));
     const lvl = levels.reduce((a, b) => (rank[b] > rank[a] ? b : a), 'none' as Level);
 
     return html`
       <div class="row" @click=${() => fireMoreInfo(this, r.entity!)}>
         <div class="head">
           <span class="lbl">${name}</span>
-          <span class="val" style=${styleMap({ color: lvl === 'ok' ? 'var(--av-value)' : LEVEL_COLOR[lvl] })}>
+          <span class="val" style=${levelStyle(lvl === 'ok' ? 'var(--av-value)' : LEVEL_COLOR[lvl], lvl === 'warning', inverseWanted(this, (this._config as any)?.warning_inverse))}>
             ${valueText}${unit ? html`<span class="unit">${unit}</span>` : nothing}
           </span>
         </div>
@@ -231,7 +234,7 @@ export class AvionicsEisCard extends LitElement {
   }
 
   private _renderBar(r: EisRowConfig, v: number, v2: number, failed: boolean) {
-    const zones = zonesOf(r);
+    const zones = zonesOf(resolveZones(this._hass, r));
     const span = r.max! - r.min!;
     const step = r.major_tick && r.major_tick > 0 ? r.major_tick : niceStep(span);
     const ticks: Array<{ p: number; major: boolean }> = [];
@@ -244,7 +247,7 @@ export class AvionicsEisCard extends LitElement {
     }
     // konwencja kokpitu: pelne = biezace (1. nad pasmem, 2. pod), puste = obserwowane min/max
     const colorOf = (x: number) => {
-      const l = levelOf(x, r);
+      const l = levelOf(x, resolveZones(this._hass, r));
       return l === 'caution' || l === 'warning' ? LEVEL_COLOR[l] : 'var(--av-value)';
     };
     // nastawy po stronie swoich wartosci: pierwsza nad paskiem, druga pod

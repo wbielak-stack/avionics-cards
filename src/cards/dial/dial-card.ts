@@ -1,4 +1,6 @@
 import { LitElement, html, svg, nothing, css, type TemplateResult } from 'lit';
+import { cardHeader } from '../../core/header';
+import { resolveZones, inverseWanted, levelStyle } from '../../core/zone-extras';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant } from '../../types';
@@ -116,7 +118,7 @@ export class AvionicsDialCard extends LitElement {
     const c = this._config;
     return html`
       <ha-card class=${classMap({ 'true-style': this._styleMode === 'true' })}>
-        ${c.title ? html`<div class="title">${c.title}</div>` : nothing}
+        ${cardHeader(c.title)}
         <div class="dials">${this._dials.map((d) => this._renderDial(d))}</div>
       </ha-card>
     `;
@@ -129,6 +131,7 @@ export class AvionicsDialCard extends LitElement {
     const ent = this._hass!.states[d.entity];
     const v = this._val(d, d.entity);
     const failed = !Number.isFinite(v);
+    d = resolveZones(this._hass, d);
     const lvl = levelOf(v, d as EisRowConfig);
     const unit = d.unit ?? ent?.attributes?.unit_of_measurement ?? '';
     const name = d.name ?? ent?.attributes?.friendly_name ?? d.entity;
@@ -149,8 +152,8 @@ export class AvionicsDialCard extends LitElement {
         </svg>
         ${simplified
           ? nothing
-          : html`<div class="readout" style="color:${failed ? 'var(--av-dim)' : lvl === 'ok' || lvl === 'none' ? 'var(--av-value)' : LEVEL_COLOR[lvl]}">
-              ${text}<span class="u">${unit}</span>
+          : html`<div class="readout"><span style=${failed ? 'color:var(--av-dim)' : levelStyle(lvl === 'ok' || lvl === 'none' ? 'var(--av-value)' : LEVEL_COLOR[lvl], lvl === 'warning', inverseWanted(this, (this._config as any)?.warning_inverse))}>
+              ${text}<span class="u">${unit}</span></span>
             </div>`}
         <div class="name">${name}</div>
       </div>

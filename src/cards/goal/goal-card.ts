@@ -1,4 +1,5 @@
 import { LitElement, html, nothing, css, type TemplateResult } from 'lit';
+import { cardHeader } from '../../core/header';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant } from '../../types';
@@ -115,7 +116,7 @@ export class AvionicsGoalCard extends LitElement {
     const c = this._config;
     return html`
       <ha-card class=${classMap({ 'true-style': this._styleMode === 'true' })}>
-        ${c.title ? html`<div class="title">${c.title}</div>` : nothing}
+        ${cardHeader(c.title)}
         ${this._rows.map((r, i) => this._renderRow(r, i))}
       </ha-card>
     `;

@@ -1,4 +1,5 @@
 import { LitElement, html, nothing, css, type TemplateResult } from 'lit';
+import { cardHeader } from '../../core/header';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant } from '../../types';
@@ -85,7 +86,7 @@ export class AvionicsWindCard extends LitElement {
         class=${classMap({ 'true-style': this._styleMode === 'true' })}
         @click=${() => target && fireMoreInfo(this, target)}
       >
-        ${c.name ? html`<div class="title">${c.name}</div>` : nothing}
+        ${cardHeader(c.name)}
         <avionics-wind-rose-el
           .bearing=${e.direction ? num(st[e.direction]?.state) : NaN}
           .speedText=${fmt(e.speed) || '--'}

@@ -1,5 +1,6 @@
 import { FormEditor } from '../../core/form-editor';
 import { schemaGrid as grid, schemaSection, zoneFields } from '../../core/row-list-editor';
+import { resolveZones } from '../../core/zone-extras';
 import { zonesSummary } from '../../core/zones-summary';
 import { TANK_DEFAULTS, type TankCardConfig } from './config';
 
@@ -18,12 +19,12 @@ export class AvionicsTankCardEditor extends FormEditor<TankCardConfig & Record<s
       caution_high: c.caution_high,
       warning_high: c.warning_high,
     };
-    const { summary, orderError } = zonesSummary(z, (k) => this.t(k));
+    const { summary, orderError } = zonesSummary(resolveZones(this.hass, z as any), (k) => this.t(k));
     if (orderError) return [{ type: 'warning' as const, text: this.t('zones.order_error') }];
     return summary ? [{ type: 'info' as const, text: summary }] : [];
   }
 
-  protected schema() {
+  protected schema(c: TankCardConfig) {
     const n = (step = 1) => ({ number: { step, mode: 'box' } });
     const e = { entity: {} };
     const tx = { text: {} };
@@ -42,7 +43,7 @@ export class AvionicsTankCardEditor extends FormEditor<TankCardConfig & Record<s
         },
       ]),
       { name: 'precision', selector: { number: { min: 0, max: 2, step: 1, mode: 'box' } } },
-      schemaSection(this.t('tank.editor.section.zones'), zoneFields()),
+      schemaSection(this.t('tank.editor.section.zones'), [...zoneFields(!!(c as any).zones_from_entities), { name: 'warning_inverse', selector: { boolean: {} } }]),
       schemaSection(this.t('tank.editor.section.stock'), [
         grid([
           { name: 'stock_entity', selector: e },

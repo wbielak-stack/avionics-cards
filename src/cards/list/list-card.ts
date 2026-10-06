@@ -1,4 +1,6 @@
 import { LitElement, html, nothing, css, type TemplateResult } from 'lit';
+import { cardHeader } from '../../core/header';
+import { resolveZones, inverseWanted, levelStyle } from '../../core/zone-extras';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -80,7 +82,7 @@ export class AvionicsListCard extends LitElement {
       const f = (this._hass as any)?.formatEntityState;
       return { text: typeof f === 'function' ? f(ent) : ent.state, level: 'none', numeric: false };
     }
-    return { text: formatValue(this._hass, id, v, r.precision, r.show_sign), level: levelOf(v, r), numeric: true };
+    return { text: formatValue(this._hass, id, v, r.precision, r.show_sign), level: levelOf(v, resolveZones(this._hass, r)), numeric: true };
   }
 
   protected render(): TemplateResult | typeof nothing {
@@ -88,7 +90,7 @@ export class AvionicsListCard extends LitElement {
     const c = this._config;
     return html`
       <ha-card class=${classMap({ 'true-style': this._styleMode === 'true' })}>
-        ${c.title ? html`<div class="title">${c.title}</div>` : nothing}
+        ${cardHeader(c.title)}
         ${this._rows.map((r) => this._renderRow(r))}
       </ha-card>
     `;
@@ -113,7 +115,7 @@ export class AvionicsListCard extends LitElement {
         <span class="lbl">${name}</span>
         <span
           class="val"
-          style=${styleMap({ color: missing ? 'var(--av-dim)' : LEVEL_COLOR[lvl] })}
+          style=${missing ? 'color:var(--av-dim)' : levelStyle(LEVEL_COLOR[lvl], lvl === 'warning', inverseWanted(this, (this._config as any)?.warning_inverse))}
         >${b ? `${a.text}${PAIR_SEP}${b.text}` : a.text}${unit ? html`<span class="unit">${unit}</span>` : nothing}</span>
       </div>
     `;

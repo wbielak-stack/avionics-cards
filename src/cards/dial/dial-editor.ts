@@ -6,11 +6,12 @@ import {
   numberSel as n,
   zoneFields,
 } from '../../core/row-list-editor';
+import { resolveZones } from '../../core/zone-extras';
 import { zonesSummary } from '../../core/zones-summary';
 
 export class AvionicsDialCardEditor extends RowListEditor<DialConfig> {
   protected rowNotes(row: DialConfig) {
-    const { summary, orderError } = zonesSummary(row, (k) => this.t(k));
+    const { summary, orderError } = zonesSummary(resolveZones(this.hass, row as any), (k) => this.t(k));
     if (orderError) return [{ type: 'warning' as const, text: this.t('zones.order_error') }];
     return summary ? [{ type: 'info' as const, text: summary }] : [];
   }
@@ -24,6 +25,7 @@ export class AvionicsDialCardEditor extends RowListEditor<DialConfig> {
     return [
       { name: 'title', selector: { text: {} } },
       { name: 'dial_style', selector: opts(['trueAvionics', 'simplified'], 'dial.editor.dial_style') },
+      { name: 'warning_inverse', selector: { boolean: {} } },
     ];
   }
 
@@ -47,7 +49,7 @@ export class AvionicsDialCardEditor extends RowListEditor<DialConfig> {
         { name: 'min', selector: n() },
         { name: 'max', selector: n() },
       ]),
-      section('eis.editor.section.zones', zoneFields()),
+      section('eis.editor.section.zones', zoneFields(!!(row as any).zones_from_entities)),
       section('eis.editor.section.setpoint', [
         grid([
           { name: 'setpoint', selector: n() },

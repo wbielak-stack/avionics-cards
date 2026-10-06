@@ -1,4 +1,5 @@
 import { LitElement, html, svg, nothing, css, type TemplateResult } from 'lit';
+import { cardHeader } from '../../core/header';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import type { HomeAssistant } from '../../types';
@@ -151,10 +152,7 @@ export class AvionicsForecastCard extends LitElement {
 
     return html`
       <ha-card class=${classMap({ 'true-style': this._styleMode === 'true' })} style="--s:${this._scale()}">
-        <div class="top">
-          <span class="title">${c.title ?? t('fc.title')}</span>
-          ${c.show_buttons ? this._buttons() : nothing}
-        </div>
+        ${cardHeader(c.title ?? t('fc.title'), c.show_buttons ? this._buttons() : nothing)}
         ${this._error
           ? html`<div class="err">${t('fc.error')}: ${this._error}</div>`
           : !n

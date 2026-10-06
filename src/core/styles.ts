@@ -47,7 +47,7 @@ export const tileBase = css`
     height: 100%;
     box-sizing: border-box;
     background: var(--av-bg);
-    border: 1.5px solid var(--av-frame);
+    border: var(--avionics-frame-width, 1.5px) solid var(--av-frame);
     border-radius: 0;
     box-shadow: none;
     overflow: hidden;
@@ -64,6 +64,41 @@ export const tileBase = css`
   .lbl {
     color: var(--av-label);
     font-weight: 700;
+  }
+  /* wspolny naglowek (core/header.ts): tytul na srodku, dodatki po bokach, kreska pod spodem */
+  .av-head {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--av-frame);
+    min-height: 20px;
+  }
+  .av-title {
+    color: var(--avionics-title-color, var(--av-label));
+    font-family: var(--avionics-title-font-family, var(--av-font));
+    font-size: var(--avionics-title-size, 15px);
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .av-side {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+  .av-left {
+    justify-self: start;
+  }
+  .av-right {
+    justify-self: end;
   }
   .hidden {
     visibility: hidden;
