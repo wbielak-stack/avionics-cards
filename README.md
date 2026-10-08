@@ -22,7 +22,7 @@ What that means on a dashboard:
 
 Why a whole set:
 
-- **One consistent interface:** 21 cards (and counting) share colours, headers, zones and the grid,
+- **One consistent interface:** 26 cards (and counting) share colours, headers, zones and the grid,
   instead of a dashboard assembled from cards that each look different. There is even a card that brings
   other cards into line — see [Avionics Frame](#avionics-frame) around a Sankey Chart.
 - **The missing pieces:** cards for things Home Assistant has no good card for, such as battery
@@ -57,6 +57,11 @@ Why a whole set:
 | Avionics Cylinders | `custom:avionics-cylinder-card` | Similar values side by side like the LEAN page: cells, rooms, phases |
 | Avionics Synoptic | `custom:avionics-synoptic-card` | Electrical synoptic: DC bus, inverter, AC bus, grid contactor |
 | Avionics Frame | `custom:avionics-frame-card` | The avionics header and frame around any card |
+| Avionics Flight Plan | `custom:avionics-plan-card` | Day plan from calendars like a flight plan, with ETE / ETA |
+| Avionics Current Leg | `custom:avionics-leg-card` | Active calendar item, time left, next waypoint |
+| Avionics Day Profile | `custom:avionics-day-profile-card` | The day as calendar lanes on a time axis |
+| Avionics Tasks | `custom:avionics-tasks-card` | To-do lists as a checklist |
+| Avionics Day Plan | `custom:avionics-day-plan-card` | One card with plan, profile, tasks and days views |
 | Avionics Climate | `custom:avionics-climate-card` | Room tile with background graph and climate / heating-mat control |
 
 ## Installation
@@ -971,6 +976,61 @@ card:
 | `title` | — | Header |
 | `card` | — | The card inside |
 | `padding` | `false` | Inner margin around the card |
+
+## Day plan cards
+
+![Day plan: Flight Plan, Current Leg, Tasks and Day Profile](docs/plan.png)
+
+The day read like a flight: calendars are the flight plan, the current event is the active leg,
+all-day events are NOTAMs. Five cards share one data layer (several calendars and to-do lists,
+fetched once per dashboard):
+
+- **Avionics Flight Plan** — columns CAL, WAYPOINT, **ETA** (arrival at the waypoint — when the item
+  starts), **ETE** (time to the start, or time left for the active one), DUR and UNTIL (when it ends);
+  24 hours from now by default, ◀ ▶ move the view by a day (and a `sync` group moves the Day Profile
+  with it); done items grey, the active leg magenta, the next
+  waypoint marked →, free windows between events, the next day after a separator, NOTAMs on top.
+- **Avionics Current Leg** — the active item with time left and leg progress, the next waypoint with
+  ETE / ETA (its start) and the nearest conflict; or a one-line strip for a main dashboard.
+- **Avionics Day Profile** — one lane per calendar (its own calendar list, independent of the plan),
+  daylight in the background, routines as outlines with events inside them, conflicts framed in amber.
+- **Avionics Tasks** — to-do lists as a checklist: overdue in red, due today in amber, done at the
+  bottom; tap to check off.
+- **Avionics Day Plan** — one card with the current leg and a day bar on top and four views: plan,
+  profile, tasks and the next days (one line per day, like a TAF).
+
+**Routines and conflicts.** Routines — daily recurring events or events recurring on at least five
+days a week (e.g. Monday–Friday), a keyword in the title or description
+(`#rutyna` by default), listed names, or a whole calendar — yield to other events: fully covered they
+are skipped, partly covered they are shortened, and events inside them become sub-waypoints (a meeting
+during work time is not a conflict). Two ordinary events at the same time are a conflict, shown in
+amber with its time range.
+
+```yaml
+type: custom:avionics-plan-card
+calendars:
+  - { entity: calendar.private, tag: PRIV }
+  - { entity: calendar.work, tag: WORK, priority: 1 }
+todos: [todo.home]
+todo_tags: HOME
+view: today_tomorrow
+```
+
+| Option | Cards | Description |
+|---|---|---|
+| `calendars` (`entity`, `tag`, `priority`, `routine`) | all but Tasks | Calendars; tag shown in a frame; `routine: true` = whole calendar is routine |
+| `todos`, `todo_tags` | Plan, Tasks, Day Plan | To-do lists and their tags (comma separated) |
+| `routine_daily`, `routine_keyword`, `routine_names` | all but Tasks | Routine rules (default: daily recurring, `#rutyna`) |
+| `day_start`, `day_end`, `min_gap` | all but Tasks | Day hours (6–22) and the shortest free window (30 min) |
+| `view`, `hours`, `show_buttons`, `show_past` | Plan | `hours` from now (default, 24), `today` or `today_tomorrow` |
+| `sync` | Plan, Profile | Sync group: the profile follows the plan's ◀ ▶ |
+| `layout` | Current Leg | `full` or `strip` |
+| `astro` | Profile, Day Plan | Daylight background (default on) |
+| `default_view`, `days`, `max_done` | Day Plan, Tasks | Start view, days ahead, done tasks shown |
+
+A ready layout for a sections view — the profile across the full width, below it the plan (3 columns)
+next to the current leg and tasks (1 column): use `max_columns: 4` and sections with `column_span: 4`,
+`3` and `1`.
 
 ## Avionics Climate
 

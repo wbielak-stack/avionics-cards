@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.1
+
+### New cards
+
+- **Day plan:** Avionics Flight Plan, Current Leg, Day Profile, Tasks and Day Plan — calendars and to-do
+  lists read like a flight: the active leg, the next waypoint with ETE / ETA, NOTAMs for all-day
+  events, routines that yield to other events, conflicts in amber, free windows, daylight in the
+  profile.
+- Flight Plan columns CAL, WAYPOINT, ETA (arrival at the waypoint — the start), ETE, DUR, UNTIL; 24 hours
+  from now by default; ◀ ▶ move the view by a day and a `sync` group moves the Day Profile with it.
+- Routines are recognised from daily or Monday–Friday recurring events, a keyword or a list of names.
+
 ## 0.2.0
 
 Ten new cards, a shared header, grid-aligned heights and a theme. Configurations from 0.1 keep working.

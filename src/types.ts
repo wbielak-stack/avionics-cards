@@ -14,6 +14,8 @@ export interface HomeAssistant {
   locale?: { language: string };
   callService(domain: string, service: string, data?: Record<string, unknown>): Promise<unknown>;
   callWS<T>(msg: Record<string, unknown>): Promise<T>;
+  callApi?<T>(method: 'GET' | 'POST', path: string, data?: Record<string, unknown>): Promise<T>;
+  config?: { latitude?: number; longitude?: number; time_zone?: string };
 }
 
 export interface CustomCardEntry {
