@@ -22,7 +22,7 @@ What that means on a dashboard:
 
 Why a whole set:
 
-- **One consistent interface:** 26 cards (and counting) share colours, headers, zones and the grid,
+- **One consistent interface:** 28 cards (and counting) share colours, headers, zones and the grid,
   instead of a dashboard assembled from cards that each look different. There is even a card that brings
   other cards into line — see [Avionics Frame](#avionics-frame) around a Sankey Chart.
 - **The missing pieces:** cards for things Home Assistant has no good card for, such as battery
@@ -62,6 +62,8 @@ Why a whole set:
 | Avionics Day Profile | `custom:avionics-day-profile-card` | The day as calendar lanes on a time axis |
 | Avionics Tasks | `custom:avionics-tasks-card` | To-do lists as a checklist |
 | Avionics Day Plan | `custom:avionics-day-plan-card` | One card with plan, profile, tasks and days views |
+| Avionics Energy Balance | `custom:avionics-energy-balance-card` | Own production, storage or grid — in kWh and PLN |
+| Avionics Devices | `custom:avionics-devices-card` | Device energy with fixed colours, bars or pie |
 | Avionics Climate | `custom:avionics-climate-card` | Room tile with background graph and climate / heating-mat control |
 
 ## Installation
@@ -1031,6 +1033,88 @@ view: today_tomorrow
 A ready layout for a sections view — the profile across the full width, below it the plan (3 columns)
 next to the current leg and tasks (1 column): use `max_columns: 4` and sections with `column_span: 4`,
 `3` and `1`.
+
+## Energy balance cards
+
+![Avionics Energy Balance and Devices](docs/energy.png)
+
+**Avionics Energy Balance** answers the question the Energy dashboard does not: did the house run on its
+own production? A verdict in plain words — *self-sufficient, surplus 2.0 kWh*, *shortfall 3.2 kWh covered
+from storage* or *from the grid 8 % of use* — then the house split into PV, storage and grid, the
+storage content traced back to PV or grid energy, trading (bought for and sold from storage) and
+inverter losses kept apart, and three clearly named indicators:
+
+- **production coverage** — PV production / house use; above 100 % the house could do without the grid;
+- **traced from PV** — house energy that actually came from PV, directly or through storage;
+- **self-sufficiency as Home Assistant computes it** — `1 − all grid import / use`, which also counts
+  energy bought to charge the battery.
+
+The **PLN** mode tells the money story, which can differ: a day can be −5.9 kWh with the grid and still
++6.95 PLN — bought cheap at night, sold at the evening peak.
+
+- **Grid account** — real money: bought, sold and the balance with average prices; energy and
+  distribution together or apart.
+- **Installation gains** — every kWh valued at what you could have done with it, in a table with
+  kWh, PLN/kWh and amount: *PV at home instead of selling* (tariff − sell price), *storage → house
+  instead of grid* (the tariff avoided in that hour — peak shaving), *storage → sale* (sell price) and
+  the *cost of energy taken from storage*. Storage works like a fuel tank with an average purchase
+  price: grid energy enters at the tariff, PV energy at the sale it could have fetched. Every hour the
+  tank is reconciled with the real content (SoC × capacity), so losses stay as cost and raise the
+  average. The gains are the value of decisions, not added to the grid account (sales appear in both).
+
+Day, week and month with ◀ ▶, hourly or daily bars of purchase and sale (optionally inverted, like
+the Energy dashboard).
+
+Sources come from the **Energy dashboard** settings (grid, solar, battery, devices). Prices come from
+a **zone tariff** set in the card (fixed peak / off-peak prices for energy and distribution, the
+off-peak hours, e.g. G12), from price entities that change by the hour, or from the Energy dashboard —
+with a purchase multiplier (e.g. 1.23 for VAT) and a sell price (e.g. RCE, PLN/MWh converted) with a
+net-billing multiplier.
+
+**Avionics Devices** shows device energy with **fixed colours** derived from the entity id — adding or
+removing a device does not shift the others (override any colour with `colors:`). Bars or a pie, one or
+two columns (automatic above eight devices), kWh or PLN, and *Other* = house minus devices.
+
+```yaml
+type: custom:avionics-energy-balance-card
+house_entity: sensor.house_energy
+soc_entity: sensor.battery_soc
+battery_capacity: 41.9
+tariff: zones
+price_ec_peak: sensor.g12_energy_peak
+price_ec_offpeak: sensor.g12_energy_offpeak
+price_dist_peak: sensor.g12_distribution_peak
+price_dist_offpeak: sensor.g12_distribution_offpeak
+offpeak_hours: 22-6, 13-15
+import_multiplier: 1.23
+price_export_entity: sensor.rce_price
+export_multiplier: 1.23
+sync: energy
+energy_sync: true
+```
+
+| Option | Cards | Description |
+|---|---|---|
+| `period`, `mode` | both | `day` / `week` / `month`; `kwh` / `pln` (also switchable on the card) |
+| `house_entity` | both | House energy meter; empty — derived from the balance |
+| `price_ec_entity`, `price_dist_entity`, `import_multiplier` | both | Purchase prices per hour; empty — Energy dashboard costs |
+| `price_export_entity`, `export_multiplier` | Balance | Sell price per hour (e.g. RCE) and net-billing multiplier |
+| `tariff: zones`, `price_ec_peak` / `_offpeak`, `price_dist_peak` / `_offpeak` | both | Zone tariff (e.g. G12) with fixed peak and off-peak prices (entity or number) |
+| `offpeak_hours`, `offpeak_hours_summer`, `offpeak_weekends` | both | Off-peak hours (`22-6, 13-15` by default), summer hours (Apr–Sep) if different, weekends (G12w) |
+| `cost_split`, `warmup_days` | Balance | Purchase cost total or energy + distribution; days traced for storage origin (7) |
+| `soc_entity`, `battery_capacity` | Balance | Storage SoC (%) and usable capacity (kWh) for the real content; empty — Energy dashboard |
+| `entities`, `colors`, `include_children`, `show_other` | Devices | Devices (empty — Energy dashboard), fixed colours, sub-devices, *Other* |
+| `layout`, `columns` | Devices | `bars` / `pie`; `auto`, `1` or `2` |
+| `invert_chart` | Balance | Purchase up, sale down (like the Energy dashboard); colours unchanged |
+| `sync` | both | Sync group: energy cards with the same name share the period |
+| `energy_sync`, `collection_key` | both | Follow (and drive) the Energy dashboard's date selection card; key `energy_…`, empty — this dashboard |
+
+**Together with the Energy dashboard cards.** Home Assistant's energy cards can be placed on any
+dashboard (e.g. `type: energy-date-selection`, `energy-usage-graph`, `energy-sources-table`; *Add card*
+→ search *energy*, or a manual card). They share the period chosen in the date selection card. With
+`energy_sync: true` the avionics energy cards follow that period and their ◀ ▶ move it, so the whole
+dashboard stays on the same day, week or month. Wrap the Home Assistant cards in Avionics Frame for the
+same header.
 
 ## Avionics Climate
 

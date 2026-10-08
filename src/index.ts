@@ -19,6 +19,7 @@ import './cards/cylinder/index';
 import './cards/synoptic/index';
 import './cards/frame/index';
 import './cards/plan/index';
+import './cards/energy/index';
 
 declare const __AVIONICS_VERSION__: string;
 declare const __AVIONICS_BUILD__: string;

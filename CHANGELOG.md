@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+### New cards
+
+- **Avionics Energy Balance** — did the house run on its own production, cover a shortfall from storage
+  or need the grid, said in plain words. The house split into PV, storage and grid; storage content
+  traced to PV or grid energy; trading and inverter losses apart; production coverage (production /
+  house use), energy traced from PV and Home Assistant's self-sufficiency side by side.
+  **PLN mode:** the grid account (energy and distribution together or apart) and installation gains as
+  a table — PV at home instead of selling, storage to the house instead of the grid, storage sale and
+  the cost of storage energy. Storage works as a tank with an average purchase price, reconciled hourly
+  with SoC × capacity so losses raise the cost. Day, week and month; hourly or daily purchase / sale.
+- **Avionics Devices** — device energy with fixed colours derived from the entity id, bars or pie, one or
+  two columns, kWh or PLN, *Other* = house minus devices.
+
+### Energy cards
+
+- Sources from the Energy dashboard settings; prices from a zone tariff in the card (e.g. G12: peak /
+  off-peak prices for energy and distribution, off-peak hours, summer hours, weekends), from price
+  entities or from the Energy dashboard, with purchase and net-billing multipliers.
+- Sync group (`sync`) and two-way sync with the Energy dashboard's date selection card (`energy_sync`).
+- Optional inverted bar chart (`invert_chart`): purchase up, sale down, like the Energy dashboard.
+
 ## 0.2.1
 
 ### New cards
